@@ -8,13 +8,14 @@ from openai import OpenAI
 from tools import TOOL_DEFINITIONS, execute_tool
 from prompts import SYSTEM_PROMPT, REPORT_TEMPLATE
 
-# Local Vertex AI proxy (OpenAI-compatible)
+# Google AI Studio (Gemini API, OpenAI-compatible endpoint)
+import os
 client = OpenAI(
-    base_url="http://127.0.0.1:8046/v1",
-    api_key="dummy",
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    api_key=os.environ.get("GOOGLE_AI_API_KEY", ""),
 )
 
-MODEL = "gemini-3-flash"
+MODEL = "gemini-2.0-flash"
 MAX_ITERATIONS = 10  # Safety limit for tool call loop
 MAX_TOKENS = 8192
 
@@ -101,7 +102,7 @@ def run_agent_stream(
         except Exception as e:
             error_msg = str(e)
             if "timeout" in error_msg.lower() or "connection" in error_msg.lower():
-                yield f"\n⚠️ **模型连接超时**，请确认本地代理（http://127.0.0.1:8046）正在运行。\n"
+                yield f"\n⚠️ **模型连接超时**，请稍后重试。\n"
             else:
                 yield f"\n❌ **模型调用失败**：{error_msg}\n"
             return
