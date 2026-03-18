@@ -38,11 +38,16 @@ import re
 
 def _extract_radar_scores(report_text: str) -> list[dict]:
     """
-    Extract compliance radar scores from report text.
-    Returns list of {subject, score, fullMark, reason} dicts, or [] if insufficient data.
+    Extract compliance coverage indicators from report text.
+    Returns list of {subject, score, fullMark, reason, coverage} dicts, or [] if insufficient data.
+
+    Coverage score reflects how thoroughly the report discusses each compliance dimension,
+    NOT whether the product is actually compliant. Score = fraction of relevant terms mentioned
+    (capped at 100), scaled to a readable range. The 'coverage' field gives a symbolic indicator.
     """
     text = report_text.lower()
 
+    # Each dimension has a set of signal terms; more unique hits = better coverage in the report
     DIMENSION_KEYWORDS: dict[str, list[str]] = {
         "电气安全": [
             "iec 60950", "iec 60065", "iec 62368", "ul 60950", "ul 62368",
@@ -73,27 +78,31 @@ def _extract_radar_scores(report_text: str) -> list[dict]:
         ],
     }
 
-    DIMENSION_REASONS: dict[str, str] = {
-        "电气安全": "根据报告中涉及的电气安全标准数量评估",
-        "EMC": "根据报告中电磁兼容相关法规覆盖度评估",
-        "化学物质": "根据报告中RoHS/REACH等化学品法规覆盖度评估",
-        "标签要求": "根据报告中标签标识要求完整度评估",
-        "环保法规": "根据报告中能效与环保法规覆盖度评估",
-        "认证要求": "根据报告中认证流程描述完整度评估",
-    }
+    # Thresholds for coverage symbols: hits / total_keywords_in_dim
+    # ≥ 0.4 → ✅ 充分覆盖, 0.15–0.4 → ⚠️ 部分覆盖, < 0.15 → ❌ 未充分覆盖
+    def _coverage_symbol(fraction: float) -> str:
+        if fraction >= 0.4:
+            return "✅"
+        elif fraction >= 0.15:
+            return "⚠️"
+        else:
+            return "❌"
 
     results = []
     total_hits = 0
     for subject, keywords in DIMENSION_KEYWORDS.items():
         hits = sum(1 for kw in keywords if kw in text)
         total_hits += hits
-        raw = min(hits / 8, 1.0)
-        score = round(45 + raw * 50)
+        fraction = hits / max(len(keywords), 1)
+        # Scale to 0–100 for radar chart display; minimum 10 to keep chart readable
+        score = max(10, round(fraction * 100))
+        symbol = _coverage_symbol(fraction)
         results.append({
             "subject": subject,
             "score": score,
             "fullMark": 100,
-            "reason": DIMENSION_REASONS[subject],
+            "reason": f"{symbol} 基于报告中相关法规的提及数量评估覆盖度，不代表产品合规状态",
+            "coverage": symbol,
         })
 
     # If no hits at all, return empty to signal "insufficient data"
@@ -102,34 +111,42 @@ def _extract_radar_scores(report_text: str) -> list[dict]:
     return results
 
 
-def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | None:
-    """
-    Extract cost estimates from report text.
-    Returns list of {market, testingFee, certFee, annualFee} or None if no cost data found.
-    """
-    # Look for cost/fee mentions with numbers
-    cost_patterns = [
-        r'(\d[\d,，.]+)\s*(?:美元|USD|\$|万元|元|CNY)',
-        r'(?:费用|成本|测试费|认证费|年费)[^\d]{0,20}(\d[\d,，.]+)',
-        r'(?:USD|￥|\$)\s*(\d[\d,，.]+)',
-        r'(\d+)\s*[~-]\s*(\d+)\s*(?:万|千|美元|USD)',
-    ]
-
-    has_cost_data = False
-    for pattern in cost_patterns:
-        if re.search(pattern, report_text, re.IGNORECASE):
-            has_cost_data = True
-            break
-
-    if not has_cost_data:
+def _parse_currency_value(raw: str) -> int | None:
+    """Parse a raw numeric string (with commas/汉字万/千) to an integer USD/RMB amount."""
+    clean = raw.replace(",", "").replace("，", "").strip()
+    # Handle "万" suffix: 1.5万 = 15000
+    if "万" in clean:
+        clean = clean.replace("万", "").strip()
+        try:
+            return int(float(clean) * 10000)
+        except ValueError:
+            return None
+    # Handle "千" suffix: 8千 = 8000
+    if "千" in clean:
+        clean = clean.replace("千", "").strip()
+        try:
+            return int(float(clean) * 1000)
+        except ValueError:
+            return None
+    try:
+        val = float(clean)
+        return int(val)
+    except ValueError:
         return None
 
-    # Try to extract market-specific costs from report text
-    # Look for patterns like "EU: $X,XXX" or "欧盟 $X,XXX"
+
+def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | None:
+    """
+    Extract cost estimates directly from report text using regex.
+    Returns list of {market, testingFee, certFee, annualFee, source} or None if no data found.
+
+    NO hardcoded fallback costs. If extraction fails, returns None so the UI shows
+    "费用数据未在报告中明确提及" instead of fabricated numbers.
+    """
     MARKET_ALIASES: dict[str, list[str]] = {
-        "欧盟": ["eu", "europe", "欧盟", "ce认证"],
+        "欧盟": ["eu", "europe", "欧盟", "ce认证", "ce"],
         "美国": ["us", "usa", "fcc", "美国", "北美"],
-        "中国": ["cn", "china", "中国", "ccc"],
+        "中国": ["cn", "china", "中国", "ccc", "3c"],
         "日本": ["jp", "japan", "日本", "pse"],
         "韩国": ["kr", "korea", "韩国", "kc"],
         "英国": ["uk", "ukca", "英国"],
@@ -139,59 +156,147 @@ def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | Non
         "东南亚": ["sea", "asean", "东南亚"],
     }
 
-    # Reference cost database (used only when cost data IS mentioned in report)
-    COST_DB: dict[str, dict] = {
-        "欧盟": {"testingFee": 8000, "certFee": 5000, "annualFee": 2000},
-        "美国": {"testingFee": 12000, "certFee": 8000, "annualFee": 3000},
-        "中国": {"testingFee": 15000, "certFee": 10000, "annualFee": 5000},
-        "日本": {"testingFee": 10000, "certFee": 7000, "annualFee": 2500},
-        "韩国": {"testingFee": 8000, "certFee": 6000, "annualFee": 2000},
-        "英国": {"testingFee": 7000, "certFee": 4500, "annualFee": 1800},
-        "澳大利亚": {"testingFee": 9000, "certFee": 6000, "annualFee": 2200},
-        "巴西": {"testingFee": 11000, "certFee": 8000, "annualFee": 3500},
-        "印度": {"testingFee": 7000, "certFee": 5000, "annualFee": 1500},
-        "东南亚": {"testingFee": 6000, "certFee": 4000, "annualFee": 1200},
-    }
+    # Patterns that capture fee type + numeric range from report text
+    # Tries to capture: "测试费 USD 3,000–8,000" / "认证费约 $5,000" / "RMB 15,000 – 30,000" etc.
+    FEE_TYPE_PATTERNS = [
+        # Range: USD/RMB X,XXX – Y,YYY
+        (r'(?:测试费|testing fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)\s*[–\-~～至到]\s*([\d,，]+)', "testingFee"),
+        (r'(?:认证费|cert(?:ification)? fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)\s*[–\-~～至到]\s*([\d,，]+)', "certFee"),
+        (r'(?:年费|年审费|annual fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)\s*[–\-~～至到]\s*([\d,，]+)', "annualFee"),
+        # Single value
+        (r'(?:测试费|testing fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)', "testingFee"),
+        (r'(?:认证费|cert(?:ification)? fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)', "certFee"),
+        (r'(?:年费|年审费|annual fee)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)', "annualFee"),
+        # Generic "预估费用 USD X,XXX–Y,YYY" lines
+        (r'(?:预估费用|估计费用|参考费用|费用参考|合计费用)[^\d\n]{0,40}?(?:USD|RMB|CNY|\$|¥|美元|元)\s*([\d,，]+)\s*[–\-~～至到]\s*([\d,，]+)', "totalFee"),
+        (r'(?:USD|RMB|CNY|\$)\s*([\d,，]+)\s*[–\-~～至到]\s*([\d,，]+)', "rangeFee"),
+    ]
 
-    DEFAULT_COST = {"testingFee": 8000, "certFee": 5000, "annualFee": 2000}
-
+    # Split text into paragraphs/sections per market to localise extraction
+    # We look for section headers like "## 🇺🇸 美国" or "## 欧盟"
     result = []
-    text_lower = report_text.lower()
+    found_any = False
+
     for market in markets:
-        # Find matching key in COST_DB
-        cost_key = None
+        # Find canonical key for this market label
+        canon = None
         for key, aliases in MARKET_ALIASES.items():
             if market == key or market.lower() in aliases or any(a in market.lower() for a in aliases):
-                cost_key = key
+                canon = key
                 break
-        costs = COST_DB.get(cost_key or "", DEFAULT_COST) if cost_key else DEFAULT_COST
-        result.append({"market": market, **costs})
+        canon = canon or market
 
-    return result if result else None
+        # Extract the market-specific section from the report
+        # Look for section header and take text until next section or end
+        section_header_patterns = [
+            re.escape(market),
+            re.escape(canon) if canon != market else None,
+        ]
+        # Build regex to find the section
+        section_text = report_text  # fallback: search full text
+        for alias in (MARKET_ALIASES.get(canon, []) + [canon, market]):
+            # Try to find a markdown section for this market
+            m = re.search(
+                rf'(?:##\s*[^\n]*{re.escape(alias)}[^\n]*\n)(.*?)(?=\n##\s|\Z)',
+                report_text,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if m:
+                section_text = m.group(1)
+                break
+
+        # Now extract fee values from section_text
+        extracted: dict[str, tuple[int, str]] = {}  # field -> (value, source_snippet)
+        for pattern, field in FEE_TYPE_PATTERNS:
+            m = re.search(pattern, section_text, re.IGNORECASE)
+            if m:
+                groups = [g for g in m.groups() if g is not None]
+                if len(groups) >= 2:
+                    lo = _parse_currency_value(groups[0])
+                    hi = _parse_currency_value(groups[1])
+                    if lo and hi:
+                        mid = (lo + hi) // 2
+                        snippet = m.group(0)[:60].strip()
+                        if field not in extracted:
+                            extracted[field] = (mid, snippet)
+                            found_any = True
+                elif len(groups) == 1:
+                    val = _parse_currency_value(groups[0])
+                    if val:
+                        snippet = m.group(0)[:60].strip()
+                        if field not in extracted:
+                            extracted[field] = (val, snippet)
+                            found_any = True
+
+        # If we only found a totalFee/rangeFee but no breakdown,
+        # show it as a single "总费用" — do NOT fabricate a split.
+        # The old 55/35/10 split was made-up data with zero basis.
+        has_breakdown = "testingFee" in extracted or "certFee" in extracted or "annualFee" in extracted
+        has_total = "totalFee" in extracted or "rangeFee" in extracted
+
+        if has_breakdown:
+            entry: dict = {"market": market}
+            entry["testingFee"] = extracted.get("testingFee", (0, ""))[0]
+            entry["certFee"] = extracted.get("certFee", (0, ""))[0]
+            entry["annualFee"] = extracted.get("annualFee", (0, ""))[0]
+            snippets = list({v[1] for v in extracted.values() if v[1]})
+            entry["source"] = snippets[0] if snippets else "报告原文"
+            result.append(entry)
+            found_any = True
+        elif has_total:
+            # Only show the total fee — no fake breakdown
+            fee_key = "totalFee" if "totalFee" in extracted else "rangeFee"
+            total_val, snippet = extracted[fee_key]
+            entry = {
+                "market": market,
+                "totalFee": total_val,
+                "testingFee": 0,
+                "certFee": 0,
+                "annualFee": 0,
+                "source": snippet,
+                "isTotal": True,  # flag for frontend to display differently
+            }
+            result.append(entry)
+            found_any = True
+
+    return result if (result and found_any) else None
+
+
+def _weeks_from_text(text: str) -> int | None:
+    """Extract a week duration from text like '3-5周', '约4周', '6 weeks', '2个月' etc.
+    
+    Handles all Unicode dash variants: - – — ~ ～ 至 到
+    """
+    # Normalize all dash-like characters to ASCII hyphen for simpler matching
+    normalized = text
+    for ch in ['–', '—', '～', '~', '至', '到']:
+        normalized = normalized.replace(ch, '-')
+    
+    # 月 → multiply by 4
+    m = re.search(r'(\d+)\s*-\s*(\d+)\s*(?:个?月|months?)', normalized, re.IGNORECASE)
+    if m:
+        return int((int(m.group(1)) + int(m.group(2))) / 2 * 4)
+    m = re.search(r'(\d+)\s*(?:个?月|months?)', normalized, re.IGNORECASE)
+    if m:
+        return int(int(m.group(1)) * 4)
+    # 周 / weeks
+    m = re.search(r'(\d+)\s*-\s*(\d+)\s*(?:周|weeks?)', normalized, re.IGNORECASE)
+    if m:
+        return int((int(m.group(1)) + int(m.group(2))) / 2)
+    m = re.search(r'(\d+)\s*(?:周|weeks?)', normalized, re.IGNORECASE)
+    if m:
+        return int(m.group(1))
+    return None
 
 
 def _extract_timeline_data(report_text: str, markets: list[str]) -> list[dict] | None:
     """
-    Extract certification timeline data from report text.
-    Returns list of {name, market, start, duration, color} or None if no timeline data found.
+    Extract certification timeline data directly from report text.
+    Returns list of {name, market, start, duration, color, source} or None if no data found.
+
+    NO hardcoded timeline templates. If a market's timeline can't be parsed from the report,
+    it is simply omitted. Returns None if nothing could be extracted.
     """
-    # Look for timeline / week / month mentions
-    timeline_patterns = [
-        r'(\d+)\s*(?:个?月|months?)',
-        r'(\d+)\s*(?:周|weeks?)',
-        r'(?:周期|时间|timeline|duration)[^\d]{0,30}(\d+)',
-        r'认证.*?(\d+).*?(?:月|周|week|month)',
-    ]
-
-    has_timeline_data = False
-    for pattern in timeline_patterns:
-        if re.search(pattern, report_text, re.IGNORECASE):
-            has_timeline_data = True
-            break
-
-    if not has_timeline_data:
-        return None
-
     MARKET_COLORS: dict[str, str] = {
         "欧盟": "#3b82f6",
         "美国": "#10a37f",
@@ -205,78 +310,134 @@ def _extract_timeline_data(report_text: str, markets: list[str]) -> list[dict] |
         "东南亚": "#ec4899",
     }
 
-    TIMELINE_DB: dict[str, list[dict]] = {
-        "欧盟": [
-            {"name": "CE — 准备技术文件", "start": 0, "duration": 4},
-            {"name": "CE — EMC测试", "start": 4, "duration": 4},
-            {"name": "CE — 安全测试", "start": 4, "duration": 6},
-            {"name": "CE — 签发DoC", "start": 10, "duration": 2},
-        ],
-        "美国": [
-            {"name": "FCC — 预测试", "start": 0, "duration": 3},
-            {"name": "FCC — 授权测试", "start": 3, "duration": 6},
-            {"name": "FCC — 申请认证", "start": 9, "duration": 4},
-        ],
-        "中国": [
-            {"name": "CCC — 工厂检查", "start": 0, "duration": 4},
-            {"name": "CCC — 型式试验", "start": 4, "duration": 8},
-            {"name": "CCC — 证书审批", "start": 12, "duration": 4},
-        ],
-        "日本": [
-            {"name": "PSE — 测试申请", "start": 0, "duration": 2},
-            {"name": "PSE — 型式试验", "start": 2, "duration": 8},
-            {"name": "PSE — 认证发放", "start": 10, "duration": 3},
-        ],
-        "韩国": [
-            {"name": "KC — 测试", "start": 0, "duration": 6},
-            {"name": "KC — 认证申请", "start": 6, "duration": 4},
-        ],
-        "英国": [
-            {"name": "UKCA — 文件准备", "start": 0, "duration": 3},
-            {"name": "UKCA — 测试", "start": 3, "duration": 5},
-            {"name": "UKCA — 声明签发", "start": 8, "duration": 2},
-        ],
-    }
-
-    DEFAULT_PHASES = [
-        {"name": "测试准备", "start": 0, "duration": 4},
-        {"name": "正式测试", "start": 4, "duration": 6},
-        {"name": "认证申请", "start": 10, "duration": 4},
-    ]
-
     MARKET_ALIASES: dict[str, list[str]] = {
-        "欧盟": ["eu", "europe", "欧盟"],
+        "欧盟": ["eu", "europe", "欧盟", "ce"],
         "美国": ["us", "usa", "fcc", "美国"],
-        "中国": ["cn", "china", "中国"],
-        "日本": ["jp", "japan", "日本"],
-        "韩国": ["kr", "korea", "韩国"],
-        "英国": ["uk", "英国"],
+        "中国": ["cn", "china", "中国", "ccc", "3c"],
+        "日本": ["jp", "japan", "日本", "pse"],
+        "韩国": ["kr", "korea", "韩国", "kc"],
+        "英国": ["uk", "英国", "ukca"],
         "澳大利亚": ["au", "australia", "澳大利亚"],
         "巴西": ["br", "brazil", "巴西"],
         "印度": ["in", "india", "印度"],
         "东南亚": ["sea", "asean", "东南亚"],
     }
 
+    # Certification phase name patterns to look for in each market section
+    PHASE_PATTERNS = [
+        # e.g. "预测试：3–4周" / "预测试 约3周"
+        (r'(?:预测试|pre[\-\s]?test)[^\n]{0,60}', "预测试"),
+        (r'(?:正式测试|授权测试|型式试验|EMC测试|安全测试|full[\s\-]?test|type[\s\-]?test)[^\n]{0,60}', "正式测试"),
+        (r'(?:申请|认证申请|证书申请|application|申报)[^\n]{0,60}', "认证申请"),
+        (r'(?:审批|审核|证书审批|review|审查)[^\n]{0,60}', "证书审批"),
+        (r'(?:工厂检查|factory inspection|现场审查)[^\n]{0,60}', "工厂检查"),
+        (r'(?:准备技术文件|技术文件|technical documentation|文件准备)[^\n]{0,60}', "技术文件准备"),
+        (r'(?:签发|DoC|合格声明|declaration)[^\n]{0,60}', "签发DoC"),
+        # Generic phase: "认证周期：X周" line
+        (r'(?:预估周期|认证周期|总周期|合计)[^\n]{0,60}', "认证总周期"),
+    ]
+
     DEFAULT_COLOR = "#52525b"
     result = []
+    found_any = False
+
     for market in markets:
-        db_key = None
+        canon = None
         for key, aliases in MARKET_ALIASES.items():
             if market == key or market.lower() in aliases or any(a in market.lower() for a in aliases):
-                db_key = key
+                canon = key
                 break
-        phases = TIMELINE_DB.get(db_key or "", DEFAULT_PHASES)
-        color = MARKET_COLORS.get(db_key or market, DEFAULT_COLOR)
-        for phase in phases:
-            result.append({
-                "name": phase["name"],
-                "market": market,
-                "start": phase["start"],
-                "duration": phase["duration"],
-                "color": color,
-            })
+        canon = canon or market
+        color = MARKET_COLORS.get(canon, DEFAULT_COLOR)
 
-    return result if result else None
+        # Extract market section
+        # Strip emoji flags from headers before matching (they break regex)
+        _clean_report = report_text
+        for flag in ['🇺🇸', '🇪🇺', '🇨🇳', '🇯🇵', '🇰🇷', '🇬🇧', '🇦🇺', '🇧🇷', '🇮🇳', '🇩🇪', '🇫🇷',
+                      '🇮🇹', '🇪🇸', '🇷🇺', '🇹🇼', '🇭🇰', '🇸🇬', '🇲🇾', '🇹🇭', '🇻🇳', '🇮🇩', '🇵🇭']:
+            _clean_report = _clean_report.replace(flag, '')
+        
+        section_text = report_text
+        for alias in (MARKET_ALIASES.get(canon, []) + [canon, market]):
+            # Try on cleaned text first (no emoji), then on original
+            for text_to_search in [_clean_report, report_text]:
+                m = re.search(
+                    rf'(?:##\s*[^\n]*{re.escape(alias)}[^\n]*\n)(.*?)(?=\n##\s|\Z)',
+                    text_to_search,
+                    re.IGNORECASE | re.DOTALL,
+                )
+                if m:
+                    section_text = m.group(1)
+                    break
+            if section_text != report_text:
+                break
+
+        # Find the "预估周期" field row in a markdown table or bullet list
+        # Pattern: | 预估周期 | 6–10周 |  or  - 预估周期：6–10周
+        timeline_rows: list[tuple[str, int]] = []  # (phase_name, duration_weeks)
+
+        # First try: look for table row with 预估周期
+        m = re.search(
+            r'预估周期[^\n|]{0,10}[|\s]+([\d\s\-–~～~至到个月周weeks]+)',
+            section_text,
+            re.IGNORECASE,
+        )
+        if m:
+            dur = _weeks_from_text(m.group(1))
+            if dur:
+                cert_name = canon
+                # Try to get certification name from context
+                cert_m = re.search(r'###\s*([^\n]+)', section_text)
+                if cert_m:
+                    cert_name = cert_m.group(1).strip()
+                timeline_rows.append((cert_name, dur))
+                found_any = True
+
+        # Second try: look for each phase pattern
+        # Collect specific phases and total separately
+        specific_phases: list[tuple[str, int]] = []
+        total_phase: tuple[str, int] | None = None
+        
+        for pat, phase_name in PHASE_PATTERNS:
+            m = re.search(pat, section_text, re.IGNORECASE)
+            if m:
+                snippet = m.group(0)
+                dur = _weeks_from_text(snippet)
+                if dur:
+                    cert_prefix = ""
+                    cert_m = re.search(r'###\s*([^\n]+)', section_text)
+                    if cert_m:
+                        label = cert_m.group(1).strip()
+                        cert_prefix = label.split()[0] + " — " if label.split() else ""
+                    label = f"{cert_prefix}{phase_name}"
+                    
+                    if phase_name == "认证总周期":
+                        total_phase = (label, dur)
+                    else:
+                        specific_phases.append((label, dur))
+                    found_any = True
+        
+        # Only use total_phase if no specific phases were found (avoid double-counting)
+        if specific_phases:
+            timeline_rows.extend(specific_phases)
+        elif total_phase:
+            timeline_rows.append(total_phase)
+
+        # Build Gantt phases from extracted rows
+        if timeline_rows:
+            cursor = 0
+            for phase_label, dur in timeline_rows[:6]:  # cap at 6 phases per market
+                result.append({
+                    "name": phase_label,
+                    "market": market,
+                    "start": cursor,
+                    "duration": dur,
+                    "color": color,
+                    "source": f"数据来源：报告中{market}认证预估周期",
+                })
+                cursor += dur
+
+    return result if (result and found_any) else None
 
 
 def extract_report_data(report_text: str, product: str, markets: list[str]) -> dict:

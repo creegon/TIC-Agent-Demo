@@ -32,6 +32,7 @@ export interface RadarScore {
   score: number;
   fullMark: number;
   reason?: string;
+  coverage?: string;  // ✅ / ⚠️ / ❌
 }
 
 export interface CostData {
@@ -39,6 +40,7 @@ export interface CostData {
   testingFee: number;
   certFee: number;
   annualFee: number;
+  source?: string;  // source snippet from report text for tooltip
 }
 
 export interface TimelineItem {
@@ -47,6 +49,7 @@ export interface TimelineItem {
   start: number;
   duration: number;
   color: string;
+  source?: string;  // source annotation for tooltip
 }
 
 export interface ChartsData {

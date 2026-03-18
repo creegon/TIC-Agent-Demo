@@ -6,10 +6,15 @@
 - Local:         http://localhost:3000
 - Network:       http://192.168.1.71:3000
 - Environments: .env.local
-✓ Ready in 308ms
+✓ Ready in 352ms
 
- GET / 200 in 334ms (next.js: 99ms, application-code: 235ms)
- GET / 200 in 32ms (next.js: 4ms, application-code: 28ms)
+ GET / 200 in 360ms (next.js: 118ms, application-code: 241ms)
+ GET / 200 in 29ms (next.js: 3ms, application-code: 26ms)
+  Reload env: .env.local
+✓ Compiled in 21ms
+ GET / 200 in 81ms (next.js: 45ms, application-code: 36ms)
+ GET / 200 in 81ms (next.js: 62ms, application-code: 19ms)
+ GET / 200 in 100ms (next.js: 2ms, application-code: 98ms)
 [?25h
 
 D:\TIC-Agent-Demo\frontend>

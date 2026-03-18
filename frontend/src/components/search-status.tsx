@@ -48,23 +48,25 @@ const statusIcon = (status: SearchStep["status"]) => {
   }
 };
 
-/** Domain credibility classification */
-function classifyDomain(hostname: string): { label: string; color: string } {
+/** Domain credibility classification — returns tier emoji + label + color */
+function classifyDomain(hostname: string): { label: string; color: string; emoji: string; tier: "official" | "industry" | "general" } {
   const h = hostname.toLowerCase();
-  const officialTLDs = [".gov", ".eu", ".int"];
-  const standardBodies = ["iec.ch", "iso.org", "etsi.org", "ansi.org", "nist.gov", "fcc.gov", "sac.gov.cn", "cqc.com.cn", "ul.com", "tuvsud.com", "bureau-veritas.com", "intertek.com", "sgs.com", "dnv.com", "tüv"];
-  const ticBodies = ["ul.com", "tuvsud.com", "bureau-veritas.com", "intertek.com", "sgs.com", "dnv.com", "dekra.com", "cts.com", "element.com"];
+  const officialTLDs = [".gov", ".europa.eu", ".int"];
+  const govPatterns = [".gov.", "europa.eu", ".gov.cn", ".go.jp", ".gc.ca", ".gov.au", ".gov.uk"];
+  const standardBodies = ["iec.ch", "iso.org", "etsi.org", "ansi.org", "nist.gov", "fcc.gov", "sac.gov.cn", "cqc.com.cn", "epa.gov", "ec.europa.eu"];
+  const ticBodies = ["ul.com", "tuvsud.com", "bureau-veritas.com", "intertek.com", "sgs.com", "dnv.com", "dekra.com", "element.com", "tuvnord.com", "bsigroup.com", "tüv", "eurofins.com"];
 
-  if (officialTLDs.some((t) => h.endsWith(t)) || h.includes(".gov.")) {
-    return { label: "官方", color: "#16a34a" };
-  }
-  if (standardBodies.some((s) => h.includes(s))) {
-    return { label: "标准", color: "#2563eb" };
+  if (
+    officialTLDs.some((t) => h.endsWith(t)) ||
+    govPatterns.some((p) => h.includes(p)) ||
+    standardBodies.some((s) => h.includes(s))
+  ) {
+    return { label: "官方来源", color: "#16a34a", emoji: "🟢", tier: "official" };
   }
   if (ticBodies.some((s) => h.includes(s))) {
-    return { label: "TIC机构", color: "#10a37f" };
+    return { label: "行业参考", color: "#d97706", emoji: "🟡", tier: "industry" };
   }
-  return { label: "参考", color: "#6e6e80" };
+  return { label: "一般来源", color: "#6e6e80", emoji: "⚪", tier: "general" };
 }
 
 export function SearchStatus({ steps, currentMessage, vizData, isLog = false }: SearchStatusProps) {
@@ -169,22 +171,28 @@ export function SearchStatus({ steps, currentMessage, vizData, isLog = false }: 
           )}
 
           {/* VIZ: Sources */}
-          {hasSources && (
-            <div className="mt-3 pt-3 border-t" style={{ borderColor: "#e5e5e5" }}>
-              <p className="text-[10px] font-medium mb-1.5" style={{ color: "#6e6e80" }}>
-                已检索来源 ({vizData.sources.length})
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {vizData.sources.slice(0, 12).map((src, i) => {
-                  let host = src.url;
-                  try {
-                    host = new URL(src.url).hostname.replace("www.", "");
-                  } catch {
-                    // keep raw
-                  }
-                  const { label, color } = classifyDomain(host);
-
-                  return (
+          {hasSources && (() => {
+            // Pre-classify all sources for the summary count
+            const classified = vizData.sources.map((src) => {
+              let host = src.url;
+              try {
+                host = new URL(src.url).hostname.replace("www.", "");
+              } catch { /* keep raw */ }
+              return { src, host, ...classifyDomain(host) };
+            });
+            const officialCount = classified.filter((c) => c.tier === "official").length;
+            return (
+              <div className="mt-3 pt-3 border-t" style={{ borderColor: "#e5e5e5" }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[10px] font-medium" style={{ color: "#6e6e80" }}>
+                    已检索来源 ({vizData.sources.length})
+                  </p>
+                  <p className="text-[10px]" style={{ color: "#16a34a" }}>
+                    🟢 {officialCount} 条官方来源
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {classified.slice(0, 12).map(({ src, host, label, color, emoji }, i) => (
                     <span
                       key={i}
                       className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1"
@@ -195,6 +203,7 @@ export function SearchStatus({ steps, currentMessage, vizData, isLog = false }: 
                       }}
                       title={src.url}
                     >
+                      <span className="text-[9px]">{emoji}</span>
                       <span style={{ color }}>{host}</span>
                       <span
                         className="text-[9px] px-1 rounded"
@@ -203,19 +212,22 @@ export function SearchStatus({ steps, currentMessage, vizData, isLog = false }: 
                         {label}
                       </span>
                     </span>
-                  );
-                })}
-                {vizData.sources.length > 12 && (
-                  <span
-                    className="text-[10px] px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: "#f7f7f8", color: "#6e6e80" }}
-                  >
-                    +{vizData.sources.length - 12} 更多
-                  </span>
-                )}
+                  ))}
+                  {vizData.sources.length > 12 && (
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: "#f7f7f8", color: "#6e6e80" }}
+                    >
+                      +{vizData.sources.length - 12} 更多
+                    </span>
+                  )}
+                </div>
+                <p className="text-[9px] mt-1.5" style={{ color: "#9ca3af" }}>
+                  🟢 官方来源（.gov/.europa.eu/.org）&nbsp; 🟡 行业参考（认证机构）&nbsp; ⚪ 一般来源
+                </p>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* VIZ: Funnel summary — only in live mode */}
           {hasFunnel && !isLog && (

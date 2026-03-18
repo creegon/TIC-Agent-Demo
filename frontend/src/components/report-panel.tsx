@@ -22,9 +22,6 @@ interface ReportPanelProps {
   chartsData?: ChartsData | null;
   researchLog?: { vizData: VizData; steps: SearchStep[] } | null;
   errorMessage?: string | null;
-  /** Called when user submits a followup; receives the question and a fn to stream-append text */
-  onFollowup?: (question: string, appendToReport: (section: string) => void) => void;
-  isFollowupLoading?: boolean;
 }
 
 function EmptyState() {
@@ -431,13 +428,7 @@ export function ReportPanel({
               >
                 📊 图表视图
               </TabsTrigger>
-              <TabsTrigger
-                value="checklist"
-                className="text-xs h-6 px-3 data-[state=active]:text-zinc-800"
-                style={{ color: "#6e6e80" }}
-              >
-                ✅ 核查清单
-              </TabsTrigger>
+              {/* Checklist tab hidden until feature is implemented */}
             </TabsList>
 
             {/* 合规报告 tab: ONLY markdown report text */}
@@ -458,19 +449,7 @@ export function ReportPanel({
               <ChartTabs reportText={report} markets={markets ?? []} chartsData={chartsData} />
             </TabsContent>
 
-            <TabsContent value="checklist">
-              <div
-                className="rounded-lg border p-8 text-center"
-                style={{
-                  backgroundColor: "#f7f7f8",
-                  borderColor: "#e5e5e5",
-                }}
-              >
-                <p className="text-sm" style={{ color: "#6e6e80" }}>
-                  ✅ 交互式核查清单（即将推出）
-                </p>
-              </div>
-            </TabsContent>
+            {/* Checklist tab content hidden until implemented */}
           </Tabs>
         )}
 

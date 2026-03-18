@@ -17,9 +17,13 @@ interface Props {
   timelineData?: TimelineItem[] | null;
 }
 
+interface TimelineItemExtended extends TimelineItem {
+  source?: string;
+}
+
 interface TooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: TimelineItem & { startDisplay: number } }>;
+  payload?: Array<{ payload: TimelineItemExtended & { startDisplay: number } }>;
 }
 
 function CustomTooltip({ active, payload }: TooltipProps) {
@@ -32,6 +36,7 @@ function CustomTooltip({ active, payload }: TooltipProps) {
         backgroundColor: "#ffffff",
         borderColor: "#e5e5e5",
         color: "#0d0d0d",
+        maxWidth: 240,
       }}
     >
       <p className="font-semibold text-zinc-800 mb-1">{d.name}</p>
@@ -44,6 +49,11 @@ function CustomTooltip({ active, payload }: TooltipProps) {
       <p className="text-zinc-600">
         周期：<span className="font-medium" style={{ color: "#10a37f" }}>{d.duration} 周</span>
       </p>
+      {d.source && (
+        <p className="text-zinc-400 mt-1 text-[10px] border-t pt-1" style={{ borderColor: "#e5e5e5" }}>
+          {d.source}
+        </p>
+      )}
     </div>
   );
 }
@@ -54,9 +64,9 @@ function NoDataState() {
       className="flex flex-col items-center justify-center rounded-lg border py-10"
       style={{ backgroundColor: "#f7f7f8", borderColor: "#e5e5e5", minHeight: 200 }}
     >
-      <p className="text-sm font-medium text-zinc-500 mb-1">暂无时间线数据</p>
+      <p className="text-sm font-medium text-zinc-500 mb-1">时间线数据待补充</p>
       <p className="text-xs text-zinc-400 text-center max-w-xs">
-        报告中未找到认证周期信息，无法生成时间线图
+        报告中未找到具体认证周期数字，无法生成时间线图。请参阅报告正文中各认证预估周期描述。
       </p>
     </div>
   );
@@ -72,7 +82,7 @@ export function TimelineChart({ markets, timelineData }: Props) {
       <div className="w-full">
         <NoDataState />
         <p className="text-center text-[10px] text-zinc-400 mt-2">
-          * 预估周期，以认证机构实际排期为准
+          * 认证周期需在报告中明确提及方可生成图表
         </p>
       </div>
     );
@@ -141,7 +151,7 @@ export function TimelineChart({ markets, timelineData }: Props) {
         </ResponsiveContainer>
       </div>
       <p className="text-center text-[10px] text-zinc-400 mt-1">
-        * 预估周期，以认证机构实际排期为准
+        认证周期提取自报告原文，为一般参考值，实际周期受认证机构排期、样品准备等因素影响。悬停查看来源。
       </p>
     </div>
   );

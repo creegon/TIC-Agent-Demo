@@ -46,7 +46,7 @@ export function ChartTabs({ reportText, markets, chartsData }: Props) {
               className="text-[11px] h-5 px-3 data-[state=active]:text-zinc-800"
               style={{ color: "#6e6e80" }}
             >
-              🕸 合规雷达
+              📋 法规识别
             </TabsTrigger>
             <TabsTrigger
               value="cost"

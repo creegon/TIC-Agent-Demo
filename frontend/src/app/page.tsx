@@ -253,8 +253,6 @@ export default function Home() {
           vizData={vizData}
           chartsData={chartsData}
           researchLog={researchLog}
-          onFollowup={handleFollowup}
-          isFollowupLoading={isFollowupLoading}
           errorMessage={errorMessage}
         />
       </div>
