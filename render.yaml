@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: tic-agent-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: GOOGLE_AI_API_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: BRAVE_API_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: PORT
+        value: "8000"

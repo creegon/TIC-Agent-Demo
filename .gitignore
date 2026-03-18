@@ -1,8 +1,71 @@
+# ── Python ────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-.env
+*.py[cod]
+*.pyo
+*.pyd
 *.egg-info/
+*.egg
 dist/
 build/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.so
+
+# ── Virtual environments ──────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment variables ─────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ── Secrets ───────────────────────────────────────────────────────────────
+*.pem
+*.key
+secrets/
+
+# ── Gradio ────────────────────────────────────────────────────────────────
 .gradio/
+gradio_cached_examples/
+
+# ── Logs ──────────────────────────────────────────────────────────────────
+*.log
+logs/
 launch.log
+
+# ── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ──────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Next.js (frontend/) ──────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env.local
+frontend/.env*.local
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/.vercel/
+
+# ── Docker ────────────────────────────────────────────────────────────────
+# (Dockerfile and docker-compose.yml are committed)
+
+# ── Exports / generated files ────────────────────────────────────────────
+exports/
+*.pdf
+tmp/

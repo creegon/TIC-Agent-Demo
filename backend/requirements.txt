@@ -1,0 +1,17 @@
+# TIC-Agent Backend — Python dependencies
+# Install: pip install -r backend/requirements.txt
+
+# ── Web framework ──────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# ── SSE (Server-Sent Events) ───────────────────────────────────────────────
+sse-starlette>=1.8.2
+
+# ── Data validation (comes with FastAPI, listed for clarity) ───────────────
+pydantic>=2.0.0
+
+# ── Existing project deps (already installed, listed for reference) ────────
+openai>=1.30.0          # Gemini via OpenAI-compatible endpoint
+fpdf2>=2.7.9            # PDF generation (export_pdf.py)
+requests>=2.31.0        # tools.py (Brave search / page fetch)

@@ -1,153 +1,169 @@
 # TIC-Agent | 智能合规检查助手
 
-> TIC（Testing, Inspection & Certification）行业合规法规监控 Agent Demo  
-> 输入产品描述和目标市场，自动搜索适用法规标准，生成结构化合规报告
+> TIC（Testing, Inspection & Certification）行业合规法规检查工具  
+> 输入产品描述和目标市场，AI 自动搜索适用法规标准，生成结构化合规报告
+
+![TODO: 截图占位](_docs/screenshot.png)
 
 ---
 
-## 功能概述
+## ✨ 功能列表
 
 | 功能 | 说明 |
 |------|------|
-| 产品智能分类 | 自动识别消费电子/玩具/食品接触/锂电池等品类 |
-| 多市场法规搜索 | 覆盖中国、美国、欧盟、日本主流市场 |
-| 法规标准详情抓取 | 从官方页面提取真实标准号和核心要求 |
-| 结构化合规报告 | Markdown 表格格式，含风险等级（高/中/低） |
-| 流式输出 | 实时显示 Agent 搜索推理过程 |
+| 🤖 AI 驱动分析 | 基于 Gemini 2.0 Flash，多轮搜索推理 |
+| 🌍 多市场覆盖 | EU / US / CN / JP / KR / AU 六大市场 |
+| 📋 结构化报告 | Markdown 表格，含风险等级（高/中/低） |
+| 📊 数据可视化 | 合规雷达图、认证成本对比、时间线甘特图 |
+| 💬 追问功能 | 基于报告上下文的多轮对话 |
+| 📥 PDF 导出 | 一键导出合规报告为 PDF |
+| 🗄️ 知识库 | 内置法规知识库（CE/FCC/CCC/RoHS/REACH 等） |
+| ⚡ 实时流式输出 | SSE 流式传输，实时显示搜索和分析进度 |
 
 ---
 
-## 环境要求
+## 🛠 技术栈
 
-- Python 3.10+
-- 本地 Vertex AI 代理运行在 `http://127.0.0.1:8046/v1`（OpenAI 兼容接口）
-- `BRAVE_API_KEY` 环境变量已配置
+| 层 | 技术 |
+|----|------|
+| 前端 | Next.js 15 + Tailwind CSS + shadcn/ui v4 + Recharts |
+| 后端 | FastAPI + SSE (sse-starlette) + Uvicorn |
+| AI 模型 | Gemini 2.0 Flash（via Google AI API） |
+| 搜索 | Brave Search API |
+| PDF | fpdf2 |
+| 部署 | Vercel（前端）+ Railway / Render（后端） |
 
 ---
 
-## 安装与运行
+## 🚀 本地开发
 
-### 1. 安装依赖
+### 环境要求
+
+- Python 3.12+
+- Node.js 18+
+- Google AI API Key（Gemini 2.0 Flash）
+- Brave Search API Key
+
+### 1. 克隆项目
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/creegon/TIC-Agent-Demo.git
+cd TIC-Agent-Demo
 ```
 
-### 2. 配置环境变量
-
-确保系统中已设置：
+### 2. 启动后端
 
 ```bash
-# Windows PowerShell
-$env:BRAVE_API_KEY = "your_brave_api_key"
+# 安装依赖
+pip install -r backend/requirements.txt
 
-# 或在 .env 文件中（项目根目录）
-BRAVE_API_KEY=your_brave_api_key
+# 配置环境变量（复制示例文件后填入真实 Key）
+cp .env.example .env
+# 编辑 .env，填入 GOOGLE_AI_API_KEY 和 BRAVE_API_KEY
+
+# 启动后端
+uvicorn backend.main:app --reload --port 8000
 ```
 
-获取 Brave Search API Key：https://api.search.brave.com/
+后端运行在 `http://localhost:8000`，API 文档：`http://localhost:8000/docs`
 
-### 3. 启动本地模型代理
-
-确保 Vertex AI 本地代理在 `http://127.0.0.1:8046` 运行，使用模型 `gemini-3-flash`。
-
-### 4. 启动应用
+### 3. 启动前端
 
 ```bash
-python app.py
+cd frontend
+
+# 安装依赖
+npm install
+
+# 配置环境变量（本地开发默认指向 localhost:8000）
+# .env.local 已预设，无需修改
+
+# 启动开发服务器
+npm run dev
 ```
 
-浏览器将自动打开 `http://localhost:7860`
+前端运行在 `http://localhost:3000`
 
 ---
 
-## 项目结构
+## 📦 部署
+
+### 前端 → Vercel
+
+1. 将 `frontend/` 目录推送到 GitHub
+2. 在 [Vercel Dashboard](https://vercel.com) 导入项目
+3. Framework Preset 选 **Next.js**，Root Directory 设为 `frontend`
+4. 在 Vercel 项目设置 → Environment Variables，添加：
+   ```
+   NEXT_PUBLIC_API_URL=https://your-backend.railway.app
+   ```
+5. 点击 Deploy
+
+### 后端 → Railway
+
+1. 在 [Railway](https://railway.app) 新建项目，连接 GitHub 仓库
+2. Railway 会自动检测根目录的 `Dockerfile`
+3. 在 Railway 环境变量中添加：
+   ```
+   GOOGLE_AI_API_KEY=your_google_ai_api_key
+   BRAVE_API_KEY=your_brave_api_key
+   ```
+4. 部署完成后，复制后端 URL 填入 Vercel 的 `NEXT_PUBLIC_API_URL`
+
+### 后端 → Render（备选）
+
+1. 在 [Render](https://render.com) 新建 Web Service
+2. 连接仓库，Render 会读取根目录的 `render.yaml`
+3. 在 Render 环境变量中添加 `GOOGLE_AI_API_KEY` 和 `BRAVE_API_KEY`
+
+---
+
+## 🔑 环境变量
+
+| 变量 | 位置 | 说明 |
+|------|------|------|
+| `GOOGLE_AI_API_KEY` | 后端（.env / Railway） | Google AI Studio API Key，用于 Gemini 2.0 Flash |
+| `BRAVE_API_KEY` | 后端（.env / Railway） | Brave Search API Key，用于合规信息检索 |
+| `NEXT_PUBLIC_API_URL` | 前端（.env.local / Vercel） | 后端 API 地址，默认 `http://127.0.0.1:8000` |
+
+---
+
+## 📁 项目结构
 
 ```
-D:\TIC-Agent-Demo\
-├── app.py          # Gradio 主应用，双栏布局，自定义 CSS
-├── agent.py        # Agent 核心逻辑（OpenAI function calling，while 循环）
-├── tools.py        # 搜索工具 + 网页抓取（含结果去噪过滤）
-├── prompts.py      # System prompt + 搜索模板
-├── requirements.txt
-├── README.md
-└── examples/       # 示例输出（可选）
+TIC-Agent-Demo/
+├── agent.py              # Agent 核心逻辑（Gemini function calling）
+├── tools.py              # 搜索工具 + 网页抓取
+├── prompts.py            # System prompt + 搜索模板
+├── knowledge_base.py     # 内置法规知识库
+├── export_pdf.py         # PDF 导出
+├── requirements.txt      # 根目录依赖（可选）
+├── Dockerfile            # 后端 Docker 镜像（项目根为工作目录）
+├── railway.toml          # Railway 部署配置
+├── render.yaml           # Render 部署配置
+├── backend/
+│   ├── main.py           # FastAPI 应用 + SSE 端点
+│   └── requirements.txt  # 后端依赖
+└── frontend/
+    ├── src/
+    │   ├── app/page.tsx  # 主页面
+    │   ├── components/   # UI 组件
+    │   └── lib/          # API 客户端 + 工具函数
+    └── package.json
 ```
 
 ---
 
-## 技术架构
+## 📸 截图
 
-### Agent 框架
-不依赖 LangChain，直接使用 OpenAI function calling 原生实现：
-
-```python
-while iteration < MAX_ITERATIONS:
-    response = client.chat.completions.create(
-        model=MODEL, messages=messages, tools=TOOL_DEFINITIONS
-    )
-    if response.choices[0].message.tool_calls:
-        # 执行工具，结果加入 messages
-    else:
-        # 生成最终报告，退出循环
-```
-
-### 搜索去噪策略
-- 过滤电商/SEO垃圾域名（Amazon、eBay 等）
-- 优先权威域名（ec.europa.eu、fcc.gov、cnca.org.cn 等）
-- 关键词评分 + 标准号模式匹配
-- 商业广告内容检测
-
-### 法规覆盖范围
-
-| 市场 | 主要法规/标准 |
-|------|-------------|
-| 欧盟 | CE标志、RED指令、RoHS、REACH、WEEE、玩具安全指令 2009/48/EC、电池法规 2023/1542/EU |
-| 美国 | FCC认证、CPSC法规、ASTM F963、UL标准、FDA法规 |
-| 中国 | CCC（3C认证）、GB强制标准、CNCA法规 |
-| 日本 | PSE认证（电安法）、PSC标志、TELEC（无线设备） |
+> TODO: 添加截图
 
 ---
 
-## 测试用例
-
-```bash
-# 在 Python 中直接测试（不启动 Gradio）
-python -c "
-from agent import run_agent_sync
-result = run_agent_sync('蓝牙耳机', ['欧盟'], '支持蓝牙5.3，内置锂电池')
-print(result[:2000])
-"
-```
-
-### 预期测试用例
-1. **蓝牙耳机 + 欧盟**：应包含 RED 指令、RoHS、IEC 62368-1 等
-2. **儿童毛绒玩具 + 美国**：应包含 ASTM F963、CPSIA、CPSC 要求
-3. **锂电池移动电源 + 中国+欧盟**：应包含 GB 31241、UN38.3、EU 电池法规
-4. **不锈钢保温杯 + 日本**：应包含食品卫生法、食品接触材料标准
-
----
-
-## 常见问题
-
-**Q: 模型连接失败**  
-A: 检查本地代理是否运行：`curl http://127.0.0.1:8046/v1/models`
-
-**Q: 搜索返回空结果**  
-A: 检查 `BRAVE_API_KEY` 是否有效：PowerShell 中运行 `$env:BRAVE_API_KEY`
-
-**Q: 报告生成慢**  
-A: Agent 需要进行多轮搜索（通常 5-8 次工具调用），正常耗时 1-3 分钟
-
-**Q: 标准号准确性**  
-A: Agent 被明确指示只引用真实标准号，但建议通过官方渠道验证
-
----
-
-## 免责声明
+## ⚠️ 免责声明
 
 本工具仅供演示和参考使用。**最终合规判定必须由 SGS、BV、TÜV Rheinland 等经认可的第三方检测机构进行专业评估。** 法规要求持续更新，请以官方最新版本为准。
 
 ---
 
-*Powered by Gemini Flash · Brave Search · Demo Purpose Only*
+*Powered by Gemini 2.0 Flash · Brave Search · Demo Purpose Only*
