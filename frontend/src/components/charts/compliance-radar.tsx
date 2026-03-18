@@ -34,20 +34,28 @@ const STANDARD_PATTERNS: { pattern: RegExp; category: string; label: string }[] 
   { pattern: /GB\s*4943[^\s,)]*/, category: "电气安全", label: "中国IT设备安全" },
   { pattern: /ASTM\s*F963[^\s,)]*/, category: "电气安全", label: "美国玩具安全" },
   { pattern: /EN\s*71[^\s,)]*/, category: "电气安全", label: "欧盟玩具安全" },
+  // SAR (Specific Absorption Rate)
+  { pattern: /EN\s*62479[^\s,)]*/, category: "电气安全", label: "SAR人体暴露评估（低功率）" },
+  { pattern: /EN\s*50663[^\s,)]*/, category: "电气安全", label: "SAR人体暴露评估（一般设备）" },
   // EMC
   { pattern: /EN\s*55032[^\s,)]*/, category: "电磁兼容", label: "多媒体设备发射" },
   { pattern: /EN\s*55035[^\s,)]*/, category: "电磁兼容", label: "多媒体设备抗扰" },
   { pattern: /EN\s*(?:IEC\s*)?61000[^\s,)]*/, category: "电磁兼容", label: "EMC通用标准" },
   { pattern: /CISPR\s*\d+[^\s,)]*/, category: "电磁兼容", label: "CISPR标准" },
-  { pattern: /47\s*CFR\s*Part\s*15[^\s,)]*/, category: "电磁兼容", label: "FCC Part 15" },
+  { pattern: /47\s*CFR[\s\u00A7§]*(?:Part\s*)?15[^\s,)]*/, category: "电磁兼容", label: "FCC Part 15" },
   { pattern: /FCC\s*Part\s*15[^\s,)]*/, category: "电磁兼容", label: "FCC Part 15" },
   { pattern: /GB\s*9254[^\s,)]*/, category: "电磁兼容", label: "中国EMC标准" },
+  { pattern: /EN\s*301\s*489[^\s,)]*/, category: "电磁兼容", label: "ETSI无线设备EMC标准" },
   // Chemical/Environmental
-  { pattern: /RoHS[^\s,)]*/, category: "化学环保", label: "有害物质限制" },
-  { pattern: /REACH[^\s,)]*/, category: "化学环保", label: "化学品注册评估" },
+  { pattern: /RoHS[^\s,)]*/, category: "化学环保", label: "有害物质限制（RoHS关键词）" },
+  { pattern: /2011\/65\/EU[^\s,)]*/, category: "化学环保", label: "有害物质限制指令（RoHS2）" },
+  { pattern: /REACH[^\s,)]*/, category: "化学环保", label: "化学品注册评估（REACH关键词）" },
+  { pattern: /\(EC\)\s*No\s*1907\/2006[^\s,)]*/, category: "化学环保", label: "REACH法规编号" },
   { pattern: /WEEE[^\s,)]*/, category: "化学环保", label: "电子废弃物回收" },
   { pattern: /ErP[^\s,)]*(?:\s*2019\/1782)?/, category: "化学环保", label: "能效/生态设计" },
   { pattern: /(?:Regulation\s*\(EU\)\s*)?2019\/1782/, category: "化学环保", label: "外部电源能效" },
+  { pattern: /Prop(?:osition)?\s*65[^\s,)]*/, category: "化学环保", label: "加州有害物质警告法规" },
+  { pattern: /加州\s*65\s*号\s*提案/, category: "化学环保", label: "加州有害物质警告法规" },
   // Certification marks
   { pattern: /CE\s*(?:认证|标志|marking)/, category: "认证标志", label: "CE认证" },
   { pattern: /FCC\s*(?:认证|ID|certification)/, category: "认证标志", label: "FCC认证" },
@@ -56,9 +64,20 @@ const STANDARD_PATTERNS: { pattern: RegExp; category: string; label: string }[] 
   { pattern: /CPSIA/, category: "认证标志", label: "美国消费品安全" },
   { pattern: /CPSC/, category: "认证标志", label: "美国消费品安全委员会" },
   // Radio
-  { pattern: /RED\s*(?:Directive|指令)?/, category: "无线电", label: "无线电设备指令" },
+  { pattern: /RED\s*(?:Directive|指令)?/, category: "无线电", label: "无线电设备指令（关键词）" },
+  { pattern: /2014\/53\/EU[^\s,)]*/, category: "无线电", label: "无线电设备指令（RED指令编号）" },
+  { pattern: /EN\s*300\s*328[^\s,)]*/, category: "无线电", label: "蓝牙2.4GHz射频标准" },
   { pattern: /EN\s*300\s*\d+[^\s,)]*/, category: "无线电", label: "ETSI无线标准" },
   { pattern: /SRRC/, category: "无线电", label: "中国无线电型号核准" },
+  { pattern: /EN\s*18031[^\s,)]*/, category: "无线电", label: "网络安全标准（RED授权法案）" },
+  // Battery safety
+  { pattern: /UN\s*38\.3[^\s,)]*/, category: "电池安全", label: "锂电池运输安全测试" },
+  { pattern: /UN38\.3[^\s,)]*/, category: "电池安全", label: "锂电池运输安全测试" },
+  { pattern: /IEC\s*62133[^\s,)]*/, category: "电池安全", label: "锂电池安全（IEC 62133）" },
+  { pattern: /UL\s*2054[^\s,)]*/, category: "电池安全", label: "UL锂电池安全（UL 2054）" },
+  { pattern: /UL\s*1642[^\s,)]*/, category: "电池安全", label: "UL锂电池芯安全（UL 1642）" },
+  // Bluetooth certification
+  { pattern: /BQB[^\s,)]*/, category: "蓝牙认证", label: "蓝牙SIG BQB资质认证" },
 ];
 
 function extractStandards(reportText: string): IdentifiedStandard[] {
@@ -96,6 +115,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "化学环保": "#22c55e",
   "认证标志": "#f59e0b",
   "无线电": "#8b5cf6",
+  "电池安全": "#f97316",
+  "蓝牙认证": "#06b6d4",
 };
 
 // ── Component ──────────────────────────────────────────────

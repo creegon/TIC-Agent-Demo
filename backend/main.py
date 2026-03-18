@@ -135,10 +135,27 @@ def _parse_currency_value(raw: str) -> int | None:
         return None
 
 
+def _detect_snippet_currency(snippet: str) -> str:
+    """
+    Detect currency from a regex match snippet.
+    Returns "CNY" or "USD" based on the currency token present in the snippet.
+    Defaults to "CNY" if ambiguous.
+    """
+    s = snippet.upper()
+    if "USD" in s or "US$" in s or "美元" in snippet:
+        return "USD"
+    if "RMB" in s or "CNY" in s or "元" in snippet or "¥" in snippet or "￥" in snippet or "人民币" in snippet:
+        return "CNY"
+    # Check for bare $ (likely USD unless context says otherwise)
+    if "$" in snippet and "USD" not in s and "RMB" not in s and "CNY" not in s:
+        return "USD"
+    return "CNY"  # Default for Chinese-context reports
+
+
 def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | None:
     """
     Extract cost estimates directly from report text using regex.
-    Returns list of {market, testingFee, certFee, annualFee, source} or None if no data found.
+    Returns list of {market, testingFee, certFee, annualFee, source, currency} or None if no data found.
 
     NO hardcoded fallback costs. If extraction fails, returns None so the UI shows
     "费用数据未在报告中明确提及" instead of fabricated numbers.
@@ -228,6 +245,17 @@ def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | Non
                             extracted[field] = (val, snippet)
                             found_any = True
 
+        # Determine dominant currency for this market entry from all extracted snippets
+        currency_votes: dict[str, int] = {"CNY": 0, "USD": 0}
+        for _, snippet in extracted.values():
+            detected = _detect_snippet_currency(snippet)
+            currency_votes[detected] = currency_votes.get(detected, 0) + 1
+        # Pick the most-voted currency; USD wins ties (more unusual, more impactful to get right)
+        market_currency = "USD" if currency_votes.get("USD", 0) >= currency_votes.get("CNY", 0) else "CNY"
+        # If nothing was extracted yet, fall back to CNY
+        if not extracted:
+            market_currency = "CNY"
+
         # If we only found a totalFee/rangeFee but no breakdown,
         # show it as a single "总费用" — do NOT fabricate a split.
         # The old 55/35/10 split was made-up data with zero basis.
@@ -241,6 +269,7 @@ def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | Non
             entry["annualFee"] = extracted.get("annualFee", (0, ""))[0]
             snippets = list({v[1] for v in extracted.values() if v[1]})
             entry["source"] = snippets[0] if snippets else "报告原文"
+            entry["currency"] = market_currency
             result.append(entry)
             found_any = True
         elif has_total:
@@ -255,6 +284,7 @@ def _extract_cost_data(report_text: str, markets: list[str]) -> list[dict] | Non
                 "annualFee": 0,
                 "source": snippet,
                 "isTotal": True,  # flag for frontend to display differently
+                "currency": market_currency,
             }
             result.append(entry)
             found_any = True

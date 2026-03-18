@@ -7,6 +7,8 @@
  * - NO hardcoded $ symbol — detect currency from data/source
  * - Handle "isTotal" flag when backend can't break down fees
  * - Small amounts don't show "$0k"
+ * - Per-market currency: each bar tooltip shows the correct currency symbol
+ * - Mixed-currency Y-axis shows plain numbers (no symbol), with a note below
  */
 
 import {
@@ -25,6 +27,7 @@ interface CostEntry extends CostData {
   totalFee?: number;
   isTotal?: boolean;
   source?: string;
+  currency?: string;
 }
 
 interface Props {
@@ -32,26 +35,40 @@ interface Props {
   costData?: CostEntry[] | null;
 }
 
-// ── Currency detection ──────────────────────────────────────
+// ── Currency helpers ──────────────────────────────────────
 
-function detectCurrency(data: CostEntry[]): string {
-  // Check source snippets for currency indicators
-  for (const d of data) {
-    const src = (d.source || "").toLowerCase();
-    if (src.includes("rmb") || src.includes("cny") || src.includes("元") || src.includes("￥") || src.includes("人民币")) {
-      return "¥";
-    }
-    if (src.includes("usd") || src.includes("$") || src.includes("美元")) {
-      return "$";
-    }
-  }
-  // Check market names — CN/JP markets likely use local currency in reports
-  for (const d of data) {
-    const m = d.market.toLowerCase();
-    if (m.includes("中国") || m === "cn") return "¥";
-    if (m.includes("日本") || m === "jp") return "¥";
-  }
-  return "¥"; // Default to RMB since reports are in Chinese
+/** Map backend currency code ("CNY"/"USD") to a display symbol */
+function currencySymbol(currency: string | undefined): string {
+  if (!currency) return "¥";
+  const upper = currency.toUpperCase();
+  if (upper === "USD") return "$";
+  return "¥"; // CNY / RMB / default
+}
+
+/**
+ * Fallback: detect currency from source snippet when backend didn't provide a currency field.
+ * Returns "CNY" or "USD".
+ */
+function detectEntryCurrency(entry: CostEntry): string {
+  if (entry.currency) return entry.currency;
+  const src = (entry.source || "").toLowerCase();
+  if (src.includes("usd") || src.includes("美元") || src.includes("us$")) return "USD";
+  if (src.includes("rmb") || src.includes("cny") || src.includes("元") || src.includes("￥") || src.includes("人民币")) return "CNY";
+  const m = entry.market.toLowerCase();
+  if (m.includes("美国") || m === "us" || m === "usa") return "USD";
+  return "CNY";
+}
+
+/** Returns true if all entries use the same currency */
+function isSingleCurrency(data: CostEntry[]): boolean {
+  const currencies = new Set(data.map(detectEntryCurrency));
+  return currencies.size === 1;
+}
+
+/** Get the single currency symbol if uniform, otherwise null */
+function uniformSymbol(data: CostEntry[]): string | null {
+  if (!isSingleCurrency(data)) return null;
+  return currencySymbol(detectEntryCurrency(data[0]));
 }
 
 function formatFee(value: number, symbol: string): string {
@@ -63,6 +80,17 @@ function formatFee(value: number, symbol: string): string {
     return `${symbol}${value.toLocaleString()}`;
   }
   return `${symbol}${value}`;
+}
+
+function formatFeeNoSymbol(value: number): string {
+  if (value === 0) return "-";
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(1)}万`;
+  }
+  if (value >= 1000) {
+    return value.toLocaleString();
+  }
+  return String(value);
 }
 
 // ── Tooltip ──────────────────────────────────────────────────
@@ -77,7 +105,8 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length) return null;
 
   const entry = payload[0]?.payload;
-  const symbol = detectCurrency(entry ? [entry] : []);
+  const currency = detectEntryCurrency(entry ?? { market: "", testingFee: 0, certFee: 0, annualFee: 0 });
+  const symbol = currencySymbol(currency);
 
   if (entry?.isTotal) {
     return (
@@ -93,6 +122,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
           </span>
         </div>
         <p className="mt-1 text-[10px] text-zinc-400">报告未提供费用明细拆分</p>
+        <p className="mt-1 text-[10px] text-zinc-500">货币：{currency}</p>
         {entry.source && (
           <p className="mt-1 pt-1 border-t text-[10px] text-zinc-400" style={{ borderColor: "#e5e5e5" }}>
             来源：{entry.source}
@@ -122,6 +152,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
           <span className="font-bold" style={{ color: "#10a37f" }}>{formatFee(total, symbol)}</span>
         </div>
       )}
+      <p className="mt-1 text-[10px] text-zinc-500">货币：{currency}</p>
       {entry?.source && (
         <p className="mt-2 pt-2 border-t text-[10px] text-zinc-400" style={{ borderColor: "#e5e5e5" }}>
           来源：{entry.source}
@@ -185,8 +216,9 @@ export function CostComparison({ costData }: Props) {
     return <NoDataState />;
   }
 
-  const symbol = detectCurrency(data);
   const hasBreakdown = data.some(d => !d.isTotal && (d.testingFee > 0 || d.certFee > 0));
+  const mixedCurrency = !isSingleCurrency(data);
+  const singleSymbol = uniformSymbol(data); // null when mixed
 
   // For isTotal entries, put totalFee into testingFee for the bar chart display
   const chartData = data.map(d => {
@@ -209,8 +241,14 @@ export function CostComparison({ costData }: Props) {
               tickLine={false}
               tickFormatter={(v: number) => {
                 if (v === 0) return "0";
-                if (v >= 10000) return `${symbol}${(v / 10000).toFixed(0)}万`;
-                return `${symbol}${(v / 1000).toFixed(0)}k`;
+                if (mixedCurrency) {
+                  // No currency symbol — just numbers
+                  if (v >= 10000) return `${(v / 10000).toFixed(0)}万`;
+                  return `${(v / 1000).toFixed(0)}k`;
+                }
+                const sym = singleSymbol ?? "¥";
+                if (v >= 10000) return `${sym}${(v / 10000).toFixed(0)}万`;
+                return `${sym}${(v / 1000).toFixed(0)}k`;
               }}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
@@ -227,9 +265,15 @@ export function CostComparison({ costData }: Props) {
         </ResponsiveContainer>
       </div>
       <CustomLegend hasBreakdown={hasBreakdown} />
-      <p className="text-center text-[10px] text-zinc-400 mt-2">
-        费用数据提取自报告原文，为行业参考区间，实际费用以认证机构报价为准。货币单位：{symbol === "¥" ? "人民币(RMB)" : "美元(USD)"}
-      </p>
+      {mixedCurrency ? (
+        <p className="text-center text-[10px] text-zinc-400 mt-2">
+          费用单位因市场而异，请参考 tooltip 中的具体货币。费用数据提取自报告原文，为行业参考区间，实际费用以认证机构报价为准。
+        </p>
+      ) : (
+        <p className="text-center text-[10px] text-zinc-400 mt-2">
+          费用数据提取自报告原文，为行业参考区间，实际费用以认证机构报价为准。货币单位：{singleSymbol === "$" ? "美元(USD)" : "人民币(RMB)"}
+        </p>
+      )}
     </div>
   );
 }

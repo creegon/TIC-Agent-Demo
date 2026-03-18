@@ -41,6 +41,9 @@ export interface CostData {
   certFee: number;
   annualFee: number;
   source?: string;  // source snippet from report text for tooltip
+  totalFee?: number;
+  isTotal?: boolean;
+  currency?: string;  // "CNY" | "USD" | etc., per-market currency detected from report
 }
 
 export interface TimelineItem {
