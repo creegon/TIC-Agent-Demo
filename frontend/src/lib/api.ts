@@ -1,7 +1,20 @@
 // src/lib/api.ts — TIC Agent SSE API client (native fetch, no EventSource lib)
 
+import { getSettings } from "@/lib/settings";
+
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_URL ?? "";
+
+function authHeaders(): Record<string, string> {
+  const s = getSettings();
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (!s.useServerDefault) {
+    if (s.googleAiKey) h["X-Google-AI-Key"] = s.googleAiKey;
+    if (s.braveApiKey) h["X-Brave-API-Key"] = s.braveApiKey;
+  }
+  // useServerDefault → no key headers, backend uses its own keys
+  return h;
+}
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -13,11 +26,40 @@ export interface AnalyzeRequest {
   extra_info?: string;
 }
 
+// Chart data types returned from backend extraction
+export interface RadarScore {
+  subject: string;
+  score: number;
+  fullMark: number;
+  reason?: string;
+}
+
+export interface CostData {
+  market: string;
+  testingFee: number;
+  certFee: number;
+  annualFee: number;
+}
+
+export interface TimelineItem {
+  name: string;
+  market: string;
+  start: number;
+  duration: number;
+  color: string;
+}
+
+export interface ChartsData {
+  radar: RadarScore[] | null;
+  costs: CostData[] | null;
+  timeline: TimelineItem[] | null;
+}
+
 export interface AnalyzeCallbacks {
   onStatus: (text: string) => void;
   onViz: (data: unknown) => void;
   onChunk: (text: string) => void;
-  onDone: (fullReport: string) => void;
+  onDone: (fullReport: string, charts?: ChartsData) => void;
   onError: (msg: string) => void;
 }
 
@@ -38,7 +80,7 @@ async function consumeSSE(
 ): Promise<void> {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify(body),
   });
 
@@ -118,8 +160,8 @@ export async function analyzeProduct(
 
           case "done": {
             try {
-              const parsed = JSON.parse(rawData) as { report: string };
-              onDone(parsed.report);
+              const parsed = JSON.parse(rawData) as { report: string; charts?: ChartsData };
+              onDone(parsed.report, parsed.charts);
             } catch {
               onDone(rawData);
             }
@@ -159,7 +201,7 @@ export async function exportPdf(
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/api/export-pdf`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ report_text: reportText, product, markets }),
   });
 

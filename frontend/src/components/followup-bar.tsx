@@ -37,27 +37,27 @@ export function FollowupBar({ visible, onSubmit, isLoading }: FollowupBarProps) 
     <div
       className="border-t flex-shrink-0"
       style={{
-        backgroundColor: "#0a0a0a",
-        borderColor: "oklch(0.16 0 0)",
+        backgroundColor: "#ffffff",
+        borderColor: "#e5e5e5",
       }}
     >
       {/* Streamed followup answer section */}
       {appendBuffer && (
         <div
           className="px-6 pt-4 pb-2 max-h-48 overflow-y-auto"
-          style={{ borderBottom: "1px solid oklch(0.14 0 0)" }}
+          style={{ borderBottom: "1px solid #e5e5e5" }}
         >
           <div
             className="rounded-lg border p-4"
             style={{
-              backgroundColor: "oklch(0.10 0 0)",
-              borderColor: "oklch(0.18 0 0)",
+              backgroundColor: "#f7f7f8",
+              borderColor: "#e5e5e5",
             }}
           >
-            <p className="text-[10px] font-medium mb-2" style={{ color: "#d4830a" }}>
+            <p className="text-[10px] font-medium mb-2" style={{ color: "#10a37f" }}>
               追问结果
             </p>
-            <p className="text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">
+            <p className="text-xs text-zinc-600 whitespace-pre-wrap leading-relaxed">
               {appendBuffer}
             </p>
           </div>
@@ -69,13 +69,13 @@ export function FollowupBar({ visible, onSubmit, isLoading }: FollowupBarProps) 
         <div
           className="flex items-center gap-3 rounded-lg border px-4 py-2.5 transition-colors"
           style={{
-            backgroundColor: "oklch(0.11 0 0)",
-            borderColor: "oklch(0.22 0 0)",
+            backgroundColor: "#ffffff",
+            borderColor: "#e5e5e5",
           }}
         >
           <svg
             className="w-4 h-4 flex-shrink-0"
-            style={{ color: "oklch(0.45 0 0)" }}
+            style={{ color: "#6e6e80" }}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -89,8 +89,8 @@ export function FollowupBar({ visible, onSubmit, isLoading }: FollowupBarProps) 
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="继续追问，例如：CE认证需要多长时间？预计费用是多少？"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-600"
-            style={{ color: "oklch(0.9 0 0)" }}
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: "#0d0d0d" }}
             disabled={isLoading}
           />
           <button
@@ -99,18 +99,18 @@ export function FollowupBar({ visible, onSubmit, isLoading }: FollowupBarProps) 
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex-shrink-0"
             style={{
               backgroundColor:
-                question.trim() && !isLoading ? "#d4830a" : "oklch(0.18 0 0)",
-              color: question.trim() && !isLoading ? "#0a0a0a" : "oklch(0.4 0 0)",
+                question.trim() && !isLoading ? "#10a37f" : "#e5e5e5",
+              color: question.trim() && !isLoading ? "#ffffff" : "#6e6e80",
               cursor: question.trim() && !isLoading ? "pointer" : "not-allowed",
             }}
             onMouseEnter={(e) => {
               if (question.trim() && !isLoading) {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "#bf7509";
+                (e.currentTarget as HTMLElement).style.backgroundColor = "#0d8f6f";
               }
             }}
             onMouseLeave={(e) => {
               if (question.trim() && !isLoading) {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "#d4830a";
+                (e.currentTarget as HTMLElement).style.backgroundColor = "#10a37f";
               }
             }}
           >
@@ -129,7 +129,7 @@ export function FollowupBar({ visible, onSubmit, isLoading }: FollowupBarProps) 
             )}
           </button>
         </div>
-        <p className="text-xs mt-2 text-center" style={{ color: "oklch(0.38 0 0)" }}>
+        <p className="text-xs mt-2 text-center" style={{ color: "#6e6e80" }}>
           基于上方报告追问 · Enter 发送
         </p>
       </div>

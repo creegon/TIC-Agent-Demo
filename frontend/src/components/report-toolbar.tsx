@@ -34,10 +34,10 @@ export function ReportToolbar({
   return (
     <div
       className="px-6 py-2.5 border-b flex items-center gap-3 flex-shrink-0"
-      style={{ borderColor: "oklch(0.16 0 0)", backgroundColor: "oklch(0.09 0 0)" }}
+      style={{ borderColor: "#e5e5e5", backgroundColor: "#f7f7f8" }}
     >
       {/* Product name */}
-      <span className="text-sm font-medium text-zinc-300 shrink-0">{product}</span>
+      <span className="text-sm font-medium text-zinc-700 shrink-0">{product}</span>
 
       {/* Market badges */}
       {markets.length > 0 && (
@@ -47,8 +47,8 @@ export function ReportToolbar({
               key={m}
               className="text-[11px] px-2 py-0.5 rounded font-medium"
               style={{
-                backgroundColor: "rgba(212, 131, 10, 0.12)",
-                color: "#d4830a",
+                backgroundColor: "rgba(16, 163, 127, 0.1)",
+                color: "#10a37f",
               }}
             >
               {m}
@@ -66,7 +66,7 @@ export function ReportToolbar({
         variant="outline"
         onClick={handleExportPdf}
         disabled={isExporting}
-        className="h-7 text-xs px-3 gap-1.5 border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800/50"
+        className="h-7 text-xs px-3 gap-1.5 border-zinc-300 text-zinc-600 hover:text-zinc-800 hover:border-zinc-400 hover:bg-zinc-100"
       >
         {isExporting ? (
           <>
@@ -113,7 +113,7 @@ export function ReportToolbar({
         size="sm"
         variant="outline"
         onClick={onOpenKnowledge}
-        className="h-7 text-xs px-3 gap-1.5 border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800/50"
+        className="h-7 text-xs px-3 gap-1.5 border-zinc-300 text-zinc-600 hover:text-zinc-800 hover:border-zinc-400 hover:bg-zinc-100"
       >
         {/* Book icon */}
         <svg

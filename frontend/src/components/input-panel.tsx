@@ -52,13 +52,13 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
       style={{
         width: "380px",
         minWidth: "380px",
-        borderColor: "oklch(0.18 0 0)",
-        backgroundColor: "#0a0a0a",
+        borderColor: "#e5e5e5",
+        backgroundColor: "#f7f7f8",
       }}
     >
       {/* Product description */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium text-zinc-300">
+        <label className="text-xs font-medium text-zinc-700">
           产品描述
           <span className="ml-1 text-red-500">*</span>
         </label>
@@ -68,20 +68,20 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
           placeholder="描述您的产品，例如：无线蓝牙耳机，支持主动降噪，续航24小时..."
           className="resize-none text-sm min-h-[100px] border"
           style={{
-            backgroundColor: "oklch(0.11 0 0)",
-            borderColor: "oklch(0.22 0 0)",
-            color: "oklch(0.92 0 0)",
+            backgroundColor: "#ffffff",
+            borderColor: "#e5e5e5",
+            color: "#0d0d0d",
           }}
           disabled={isLoading}
         />
-        <p className="text-xs" style={{ color: "oklch(0.5 0 0)" }}>
+        <p className="text-xs" style={{ color: "#6e6e80" }}>
           越详细越准确，包括材质、功能、使用场景
         </p>
       </div>
 
       {/* Target markets */}
       <div className="flex flex-col gap-2.5">
-        <label className="text-xs font-medium text-zinc-300">
+        <label className="text-xs font-medium text-zinc-700">
           目标市场
           <span className="ml-1 text-red-500">*</span>
         </label>
@@ -92,11 +92,11 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
               className="flex items-center gap-2 rounded-md px-3 py-2 cursor-pointer border transition-colors"
               style={{
                 backgroundColor: markets.includes(market.id)
-                  ? "rgba(212, 131, 10, 0.08)"
-                  : "oklch(0.11 0 0)",
+                  ? "rgba(16, 163, 127, 0.08)"
+                  : "#ffffff",
                 borderColor: markets.includes(market.id)
-                  ? "rgba(212, 131, 10, 0.4)"
-                  : "oklch(0.2 0 0)",
+                  ? "rgba(16, 163, 127, 0.4)"
+                  : "#e5e5e5",
               }}
               onClick={() => !isLoading && toggleMarket(market.id)}
             >
@@ -107,7 +107,7 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
                 className="w-3.5 h-3.5"
                 style={
                   markets.includes(market.id)
-                    ? { accentColor: "#d4830a" }
+                    ? { accentColor: "#10a37f" }
                     : {}
                 }
               />
@@ -116,8 +116,8 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
                 className="text-xs cursor-pointer select-none"
                 style={{
                   color: markets.includes(market.id)
-                    ? "oklch(0.88 0 0)"
-                    : "oklch(0.65 0 0)",
+                    ? "#0d0d0d"
+                    : "#6e6e80",
                 }}
               >
                 {market.label}
@@ -132,9 +132,9 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
 
       {/* Extra info */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-medium text-zinc-300">
+        <label className="text-xs font-medium text-zinc-700">
           补充信息
-          <span className="ml-1.5 text-xs font-normal" style={{ color: "oklch(0.5 0 0)" }}>
+          <span className="ml-1.5 text-xs font-normal" style={{ color: "#6e6e80" }}>
             （可选）
           </span>
         </label>
@@ -144,9 +144,9 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
           placeholder="已有认证、特殊材料、目标用户群等..."
           className="resize-none text-sm min-h-[72px] border"
           style={{
-            backgroundColor: "oklch(0.11 0 0)",
-            borderColor: "oklch(0.22 0 0)",
-            color: "oklch(0.92 0 0)",
+            backgroundColor: "#ffffff",
+            borderColor: "#e5e5e5",
+            color: "#0d0d0d",
           }}
           disabled={isLoading}
         />
@@ -158,18 +158,18 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
         disabled={!canSubmit}
         className="w-full py-2.5 rounded-md text-sm font-semibold transition-all"
         style={{
-          backgroundColor: canSubmit ? "#d4830a" : "oklch(0.18 0 0)",
-          color: canSubmit ? "#0a0a0a" : "oklch(0.45 0 0)",
+          backgroundColor: canSubmit ? "#10a37f" : "#e5e5e5",
+          color: canSubmit ? "#ffffff" : "#6e6e80",
           cursor: canSubmit ? "pointer" : "not-allowed",
         }}
         onMouseEnter={(e) => {
           if (canSubmit) {
-            (e.currentTarget as HTMLElement).style.backgroundColor = "#bf7509";
+            (e.currentTarget as HTMLElement).style.backgroundColor = "#0d8f6f";
           }
         }}
         onMouseLeave={(e) => {
           if (canSubmit) {
-            (e.currentTarget as HTMLElement).style.backgroundColor = "#d4830a";
+            (e.currentTarget as HTMLElement).style.backgroundColor = "#10a37f";
           }
         }}
       >
@@ -189,7 +189,7 @@ export function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
       {/* Example cards */}
       <div
         className="border-t pt-4"
-        style={{ borderColor: "oklch(0.16 0 0)" }}
+        style={{ borderColor: "#e5e5e5" }}
       >
         <ExampleCards onSelect={handleExampleSelect} />
       </div>

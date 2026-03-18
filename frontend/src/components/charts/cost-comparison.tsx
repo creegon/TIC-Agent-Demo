@@ -8,12 +8,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
-import { getMarketCertCosts } from "@/lib/chart-data";
+import { type CostData } from "@/lib/api";
 
 interface Props {
   markets: string[];
+  costData?: CostData[] | null;
 }
 
 interface TooltipProps {
@@ -29,28 +29,28 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
     <div
       className="rounded-lg px-3 py-2 text-xs shadow-lg border"
       style={{
-        backgroundColor: "#18181b",
-        borderColor: "#3f3f46",
-        color: "#fff",
+        backgroundColor: "#ffffff",
+        borderColor: "#e5e5e5",
+        color: "#0d0d0d",
       }}
     >
-      <p className="font-semibold text-zinc-100 mb-2">{label}</p>
+      <p className="font-semibold text-zinc-800 mb-2">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
           <span
             className="inline-block w-2 h-2 rounded-sm"
             style={{ backgroundColor: p.color }}
           />
-          <span className="text-zinc-300">{p.name}：</span>
-          <span className="font-medium text-white">${p.value.toLocaleString()}</span>
+          <span className="text-zinc-600">{p.name}：</span>
+          <span className="font-medium text-zinc-800">${p.value.toLocaleString()}</span>
         </div>
       ))}
       <div
         className="mt-2 pt-2 border-t flex justify-between"
-        style={{ borderColor: "#3f3f46" }}
+        style={{ borderColor: "#e5e5e5" }}
       >
-        <span className="text-zinc-400">合计：</span>
-        <span className="font-bold" style={{ color: "#d4830a" }}>
+        <span className="text-zinc-500">合计：</span>
+        <span className="font-bold" style={{ color: "#10a37f" }}>
           ${total.toLocaleString()}
         </span>
       </div>
@@ -62,24 +62,51 @@ function CustomLegend() {
   return (
     <div className="flex gap-4 justify-center mt-1 text-xs">
       {[
-        { key: "testingFee", color: "#1a3a5c", label: "测试费" },
-        { key: "certFee", color: "#d4830a", label: "认证费" },
-        { key: "annualFee", color: "#e8a838", label: "年审费" },
+        { key: "testingFee", color: "#3b82f6", label: "测试费" },
+        { key: "certFee", color: "#10a37f", label: "认证费" },
+        { key: "annualFee", color: "#34d399", label: "年审费" },
       ].map((item) => (
         <div key={item.key} className="flex items-center gap-1.5">
           <span
             className="inline-block w-3 h-3 rounded-sm"
             style={{ backgroundColor: item.color }}
           />
-          <span className="text-zinc-400">{item.label}</span>
+          <span className="text-zinc-500">{item.label}</span>
         </div>
       ))}
     </div>
   );
 }
 
-export function CostComparison({ markets }: Props) {
-  const data = getMarketCertCosts(markets);
+function NoDataState() {
+  return (
+    <div
+      className="flex flex-col items-center justify-center rounded-lg border py-10"
+      style={{ backgroundColor: "#f7f7f8", borderColor: "#e5e5e5", minHeight: 200 }}
+    >
+      <p className="text-sm font-medium text-zinc-500 mb-1">暂无费用数据</p>
+      <p className="text-xs text-zinc-400 text-center max-w-xs">
+        报告中未找到具体的认证费用信息，无法生成成本对比图
+      </p>
+    </div>
+  );
+}
+
+export function CostComparison({ markets, costData }: Props) {
+  // Only show chart if costData is explicitly provided from backend
+  // Do NOT use hardcoded fallback data
+  const data = costData && costData.length > 0 ? costData : null;
+
+  if (!data) {
+    return (
+      <div className="w-full">
+        <NoDataState />
+        <p className="text-center text-[10px] text-zinc-400 mt-2">
+          * 费用数据来源于报告中提取的行业参考值
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -92,43 +119,31 @@ export function CostComparison({ markets }: Props) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#27272a"
+              stroke="#e5e5e5"
               vertical={false}
             />
             <XAxis
               dataKey="market"
-              tick={{ fill: "#a1a1aa", fontSize: 11 }}
-              axisLine={{ stroke: "#3f3f46" }}
+              tick={{ fill: "#6e6e80", fontSize: 11 }}
+              axisLine={{ stroke: "#e5e5e5" }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#71717a", fontSize: 10 }}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-            {/* Reference line: $20k threshold */}
-            <ReferenceLine
-              y={20000}
-              stroke="#52525b"
-              strokeDasharray="4 4"
-              label={{
-                value: "$20k 参考线",
-                fill: "#71717a",
-                fontSize: 10,
-                position: "insideTopRight",
-              }}
-            />
-            <Bar dataKey="testingFee" stackId="a" fill="#1a3a5c" name="测试费" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="certFee" stackId="a" fill="#d4830a" name="认证费" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="annualFee" stackId="a" fill="#e8a838" name="年审费" radius={[3, 3, 0, 0]} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+            <Bar dataKey="testingFee" stackId="a" fill="#3b82f6" name="测试费" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="certFee" stackId="a" fill="#10a37f" name="认证费" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="annualFee" stackId="a" fill="#34d399" name="年审费" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       <CustomLegend />
-      <p className="text-center text-[10px] text-zinc-600 mt-2">
-        * 费用为参考估算（USD），实际费用因产品类别和认证机构而异
+      <p className="text-center text-[10px] text-zinc-400 mt-2">
+        * 数据来源：报告中提取的行业参考值（USD），实际费用因产品类别和认证机构而异
       </p>
     </div>
   );

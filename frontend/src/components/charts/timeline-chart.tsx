@@ -10,15 +10,16 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { getMarketTimelines, TimelineData } from "@/lib/chart-data";
+import { type TimelineItem } from "@/lib/api";
 
 interface Props {
   markets: string[];
+  timelineData?: TimelineItem[] | null;
 }
 
 interface TooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: TimelineData & { startDisplay: number } }>;
+  payload?: Array<{ payload: TimelineItem & { startDisplay: number } }>;
 }
 
 function CustomTooltip({ active, payload }: TooltipProps) {
@@ -28,41 +29,63 @@ function CustomTooltip({ active, payload }: TooltipProps) {
     <div
       className="rounded-lg px-3 py-2 text-xs shadow-lg border"
       style={{
-        backgroundColor: "#18181b",
-        borderColor: "#3f3f46",
-        color: "#fff",
+        backgroundColor: "#ffffff",
+        borderColor: "#e5e5e5",
+        color: "#0d0d0d",
       }}
     >
-      <p className="font-semibold text-zinc-100 mb-1">{d.name}</p>
-      <p className="text-zinc-300">
-        市场：<span className="font-medium text-white">{d.market}</span>
+      <p className="font-semibold text-zinc-800 mb-1">{d.name}</p>
+      <p className="text-zinc-600">
+        市场：<span className="font-medium text-zinc-800">{d.market}</span>
       </p>
-      <p className="text-zinc-300">
-        开始：第 <span className="font-medium text-white">{d.start}</span> 周
+      <p className="text-zinc-600">
+        开始：第 <span className="font-medium text-zinc-800">{d.start}</span> 周
       </p>
-      <p className="text-zinc-300">
-        周期：<span className="font-medium" style={{ color: "#d4830a" }}>{d.duration} 周</span>
+      <p className="text-zinc-600">
+        周期：<span className="font-medium" style={{ color: "#10a37f" }}>{d.duration} 周</span>
       </p>
     </div>
   );
 }
 
-export function TimelineChart({ markets }: Props) {
-  const rawData = getMarketTimelines(markets);
+function NoDataState() {
+  return (
+    <div
+      className="flex flex-col items-center justify-center rounded-lg border py-10"
+      style={{ backgroundColor: "#f7f7f8", borderColor: "#e5e5e5", minHeight: 200 }}
+    >
+      <p className="text-sm font-medium text-zinc-500 mb-1">暂无时间线数据</p>
+      <p className="text-xs text-zinc-400 text-center max-w-xs">
+        报告中未找到认证周期信息，无法生成时间线图
+      </p>
+    </div>
+  );
+}
 
-  // For Gantt simulation: we use two stacked bars
-  // Bar 1 (transparent): start offset
-  // Bar 2 (colored): duration
+export function TimelineChart({ markets, timelineData }: Props) {
+  // Only show chart if timelineData is explicitly provided from backend
+  // Do NOT use hardcoded fallback data
+  const rawData = timelineData && timelineData.length > 0 ? timelineData : null;
+
+  if (!rawData) {
+    return (
+      <div className="w-full">
+        <NoDataState />
+        <p className="text-center text-[10px] text-zinc-400 mt-2">
+          * 预估周期，以认证机构实际排期为准
+        </p>
+      </div>
+    );
+  }
+
+  // For Gantt simulation: stacked bars with transparent spacer
   const data = rawData.map((d) => ({
     ...d,
-    startDisplay: d.start,    // invisible spacer
-    durationDisplay: d.duration, // visible bar
+    startDisplay: d.start,
+    durationDisplay: d.duration,
   }));
 
-  // Limit to reasonable number of rows
-  const displayData = data.slice(0, 12);
-
-  // Calculate total weeks for X axis
+  const displayData = data.slice(0, 16);
   const maxWeeks = Math.max(...displayData.map((d) => d.start + d.duration), 16);
 
   return (
@@ -77,21 +100,21 @@ export function TimelineChart({ markets }: Props) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#27272a"
+              stroke="#e5e5e5"
               horizontal={false}
             />
             <XAxis
               type="number"
               domain={[0, maxWeeks]}
-              tick={{ fill: "#71717a", fontSize: 10 }}
-              axisLine={{ stroke: "#3f3f46" }}
+              tick={{ fill: "#9ca3af", fontSize: 10 }}
+              axisLine={{ stroke: "#e5e5e5" }}
               tickLine={false}
               tickFormatter={(v) => `第${v}周`}
               label={{
                 value: "（周）",
                 position: "insideBottomRight",
                 offset: -5,
-                fill: "#52525b",
+                fill: "#d1d5db",
                 fontSize: 10,
               }}
             />
@@ -99,11 +122,11 @@ export function TimelineChart({ markets }: Props) {
               type="category"
               dataKey="name"
               width={140}
-              tick={{ fill: "#a1a1aa", fontSize: 10 }}
+              tick={{ fill: "#6e6e80", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
 
             {/* Invisible spacer bar */}
             <Bar dataKey="startDisplay" stackId="gantt" fill="transparent" isAnimationActive={false} />
@@ -117,8 +140,8 @@ export function TimelineChart({ markets }: Props) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <p className="text-center text-[10px] text-zinc-600 mt-1">
-        * 时间线为参考估算，实际周期因产品复杂度和机构工作量而异
+      <p className="text-center text-[10px] text-zinc-400 mt-1">
+        * 预估周期，以认证机构实际排期为准
       </p>
     </div>
   );

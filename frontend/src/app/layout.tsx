@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={inter.variable}>
-      <body className="antialiased min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0a" }}>
+      <body className="antialiased min-h-screen flex flex-col">
         {children}
       </body>
     </html>

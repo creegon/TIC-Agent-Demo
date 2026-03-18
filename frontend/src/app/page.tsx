@@ -6,7 +6,7 @@ import { InputPanel } from "@/components/input-panel";
 import { ReportPanel } from "@/components/report-panel";
 import { FollowupBar } from "@/components/followup-bar";
 import { SearchStep } from "@/components/search-status";
-import { analyzeProduct, followUp } from "@/lib/api";
+import { analyzeProduct, followUp, type ChartsData } from "@/lib/api";
 
 interface SubmitData {
   product: string;
@@ -35,15 +35,21 @@ export default function Home() {
   const [currentProduct, setCurrentProduct] = useState<string>("");
   const [currentMarkets, setCurrentMarkets] = useState<string[]>([]);
   const [vizData, setVizData] = useState<VizData>({ searchKeywords: [], sources: [] });
+  const [chartsData, setChartsData] = useState<ChartsData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Mobile: whether the input panel is expanded
   const [mobileInputOpen, setMobileInputOpen] = useState(false);
+  // Research log — persists after analysis completes
+  const [researchLog, setResearchLog] = useState<{ vizData: VizData; steps: SearchStep[] } | null>(null);
 
   // followup conversation history (messages array sent to backend)
   const messagesRef = useRef<Array<{ role: string; content: string }>>([]);
 
   // accumulated report text (for followup sections)
   const reportRef = useRef<string>("");
+
+  // Track vizData in a ref for access from async callbacks
+  const vizDataRef = useRef<VizData>({ searchKeywords: [], sources: [] });
 
   const handleSubmit = async (data: SubmitData) => {
     setIsLoading(true);
@@ -52,6 +58,9 @@ export default function Home() {
     setCurrentProduct(data.product);
     setCurrentMarkets(data.markets);
     setVizData({ searchKeywords: [], sources: [] });
+    vizDataRef.current = { searchKeywords: [], sources: [] };
+    setChartsData(null);
+    setResearchLog(null);
     messagesRef.current = [];
     reportRef.current = "";
     // Collapse input panel on mobile after submit
@@ -98,6 +107,8 @@ export default function Home() {
               next.funnelSummary = vizPayload as unknown as VizData["funnelSummary"];
             }
 
+            // Keep ref in sync for use in onDone callback
+            vizDataRef.current = next;
             return next;
           });
         },
@@ -108,11 +119,16 @@ export default function Home() {
           setReport(accumulatedReport);
         },
 
-        onDone: (fullReport) => {
+        onDone: (fullReport, charts) => {
           // Backend sends the full report text on done; prefer it if non-empty
           const finalReport = fullReport.trim() ? fullReport : accumulatedReport;
           reportRef.current = finalReport;
           setReport(finalReport);
+
+          // Save charts data from backend
+          if (charts) {
+            setChartsData(charts);
+          }
 
           // Build initial messages array for followup context
           messagesRef.current = [
@@ -124,10 +140,12 @@ export default function Home() {
           ];
 
           setIsLoading(false);
+          // Save research log using the ref (avoids nested setState)
+          setResearchLog({ vizData: vizDataRef.current, steps: [{ id: "done", label: "分析完成", status: "done" }] });
           setSearchSteps([{ id: "live", label: "分析完成", status: "done" }]);
           setCurrentSearchMessage("");
 
-          // Clear steps after short delay
+          // Clear live steps after short delay (research log persists separately)
           setTimeout(() => {
             setSearchSteps([]);
           }, 800);
@@ -181,7 +199,7 @@ export default function Home() {
   return (
     <div
       className="flex flex-col"
-      style={{ height: "100dvh", backgroundColor: "#0a0a0a" }}
+      style={{ height: "100dvh", backgroundColor: "#ffffff" }}
     >
       {/* Top navbar */}
       <Navbar />
@@ -189,10 +207,10 @@ export default function Home() {
       {/* Mobile: collapsible input panel toggle button */}
       <div
         className="md:hidden border-b flex-shrink-0"
-        style={{ borderColor: "oklch(0.18 0 0)", backgroundColor: "oklch(0.09 0 0)" }}
+        style={{ borderColor: "#e5e5e5", backgroundColor: "#f7f7f8" }}
       >
         <button
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-zinc-300"
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-zinc-700"
           onClick={() => setMobileInputOpen((v) => !v)}
         >
           <span className="flex items-center gap-2">
@@ -211,7 +229,7 @@ export default function Home() {
 
         {/* Collapsible input panel on mobile */}
         {mobileInputOpen && (
-          <div className="border-t" style={{ borderColor: "oklch(0.18 0 0)" }}>
+          <div className="border-t" style={{ borderColor: "#e5e5e5" }}>
             <InputPanel onSubmit={handleSubmit} isLoading={isLoading} />
           </div>
         )}
@@ -233,6 +251,8 @@ export default function Home() {
           product={currentProduct}
           markets={currentMarkets}
           vizData={vizData}
+          chartsData={chartsData}
+          researchLog={researchLog}
           onFollowup={handleFollowup}
           isFollowupLoading={isFollowupLoading}
           errorMessage={errorMessage}

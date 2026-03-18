@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { SettingsDialog } from "@/components/settings-dialog";
 
 export function Navbar() {
   return (
     <header
       className="sticky top-0 z-50 border-b"
       style={{
-        backgroundColor: "#0a0a0a",
-        borderColor: "oklch(0.22 0 0)",
+        backgroundColor: "#ffffff",
+        borderColor: "#e5e5e5",
       }}
     >
       <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
@@ -16,19 +17,19 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <div
             className="w-7 h-7 rounded flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: "#d4830a", color: "#0a0a0a" }}
+            style={{ backgroundColor: "#10a37f", color: "#ffffff" }}
           >
             T
           </div>
-          <span className="text-sm font-semibold text-zinc-100 tracking-tight">
+          <span className="text-sm font-semibold text-zinc-800 tracking-tight">
             TIC-Agent
           </span>
           <span
             className="text-xs px-2 py-0.5 rounded-full border font-medium"
             style={{
-              borderColor: "oklch(0.22 0 0)",
-              color: "oklch(0.6 0 0)",
-              backgroundColor: "oklch(0.13 0 0)",
+              borderColor: "#e5e5e5",
+              color: "#6e6e80",
+              backgroundColor: "#f7f7f8",
             }}
           >
             Beta
@@ -36,18 +37,16 @@ export function Navbar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs" style={{ color: "oklch(0.6 0 0)" }}>
-            智能 TIC 合规检查工具
-          </span>
+        <div className="flex items-center gap-3">
+          <SettingsDialog />
           <Link
             href="https://github.com/creegon/TIC-Agent-Demo"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs transition-colors"
-            style={{ color: "oklch(0.6 0 0)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "oklch(0.9 0 0)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "oklch(0.6 0 0)")}
+            style={{ color: "#6e6e80" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#0d0d0d")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#6e6e80")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

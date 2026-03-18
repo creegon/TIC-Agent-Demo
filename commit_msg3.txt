@@ -1,0 +1,11 @@
+fix: major overhaul — real search, dynamic charts, light theme
+
+- Switch to OpenRouter for function calling support (Vertex proxy lacks tools)
+- Force 3 search rounds before generating report
+- Fix SSE classification: report content now correctly tagged as chunk events
+- Backend extracts radar/cost/timeline data from actual report text
+- Remove all hardcoded mock chart data
+- Settings dialog with "use server default" toggle
+- Light theme (ChatGPT-inspired: white bg + #10a37f accent)
+- Static export for Cloudflare tunnel deployment
+- Knowledge drawer accordion fix

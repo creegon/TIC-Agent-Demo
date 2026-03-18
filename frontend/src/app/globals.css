@@ -45,44 +45,44 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* Amber accent */
-  --color-amber: #d4830a;
+  /* Accent color */
+  --color-amber: #10a37f;
 }
 
-/* Force dark theme globally */
+/* Light theme — ChatGPT-inspired */
 :root {
-  --background: #0a0a0a;
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.13 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.13 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: #d4830a;
-  --primary-foreground: oklch(0.08 0 0);
-  --secondary: oklch(0.18 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.18 0 0);
-  --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.18 0 0);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.65 0.22 27);
-  --border: oklch(0.22 0 0);
-  --input: oklch(0.22 0 0);
-  --ring: #d4830a;
+  --background: #ffffff;
+  --foreground: #0d0d0d;
+  --card: #f7f7f8;
+  --card-foreground: #0d0d0d;
+  --popover: #ffffff;
+  --popover-foreground: #0d0d0d;
+  --primary: #10a37f;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f7f8;
+  --secondary-foreground: #0d0d0d;
+  --muted: #f7f7f8;
+  --muted-foreground: #6e6e80;
+  --accent: #f7f7f8;
+  --accent-foreground: #0d0d0d;
+  --destructive: #ef4444;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #10a37f;
   --radius: 0.5rem;
-  --chart-1: oklch(0.7 0.18 45);
-  --chart-2: oklch(0.65 0.16 200);
-  --chart-3: oklch(0.6 0.14 150);
-  --chart-4: oklch(0.55 0.12 280);
-  --chart-5: oklch(0.5 0.1 330);
-  --sidebar: oklch(0.11 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: #d4830a;
-  --sidebar-primary-foreground: oklch(0.08 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: #d4830a;
+  --chart-1: #10a37f;
+  --chart-2: #1a7f5a;
+  --chart-3: #2563eb;
+  --chart-4: #7c3aed;
+  --chart-5: #f59e0b;
+  --sidebar: #f9f9f9;
+  --sidebar-foreground: #0d0d0d;
+  --sidebar-primary: #10a37f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ececf1;
+  --sidebar-accent-foreground: #0d0d0d;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #10a37f;
 }
 
 @layer base {
@@ -91,11 +91,11 @@
   }
   html {
     @apply font-sans;
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
-    background-color: #0a0a0a;
-    color: oklch(0.95 0 0);
+    background-color: #ffffff;
+    color: #0d0d0d;
     @apply font-sans;
   }
 }

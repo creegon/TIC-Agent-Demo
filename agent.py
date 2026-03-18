@@ -9,14 +9,17 @@ from tools import TOOL_DEFINITIONS, execute_tool
 from prompts import SYSTEM_PROMPT, REPORT_TEMPLATE
 from knowledge_base import cross_validate, build_cross_validation_html
 
-# Google AI Studio (Gemini API, OpenAI-compatible endpoint)
+# Default: use OpenRouter (supports function calling)
+# When user provides their own Google AI key via frontend, a per-request client is created
 import os
+_DEFAULT_BASE_URL = os.environ.get("DEFAULT_LLM_BASE_URL", "https://openrouter.ai/api/v1")
+_DEFAULT_API_KEY = os.environ.get("DEFAULT_LLM_API_KEY", "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")
 client = OpenAI(
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-    api_key=os.environ.get("GOOGLE_AI_API_KEY", ""),
+    base_url=_DEFAULT_BASE_URL,
+    api_key=_DEFAULT_API_KEY,
 )
 
-MODEL = "gemini-2.0-flash"
+MODEL = os.environ.get("DEFAULT_LLM_MODEL", "google/gemini-2.0-flash-001")
 MAX_ITERATIONS = 15  # Safety limit for tool call loop (iter-4: increased for deeper search)
 MAX_TOKENS = 8192
 
@@ -128,6 +131,8 @@ def run_agent_stream(
     product: str,
     markets: list[str],
     extra_info: str = "",
+    api_key: str = "",
+    brave_api_key: str = "",
 ) -> Generator[str, None, None]:
     """
     Run the compliance agent with streaming output.
@@ -145,6 +150,20 @@ def run_agent_stream(
     if not markets:
         yield "❌ 错误：请选择至少一个目标市场"
         return
+    
+    # Use provided API key or fallback to module-level client
+    if api_key:
+        local_client = OpenAI(
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            api_key=api_key,
+        )
+    else:
+        local_client = client
+    
+    # Override brave key in tools if provided
+    if brave_api_key:
+        import tools as _tools
+        _tools.BRAVE_API_KEY = brave_api_key
     
     # Initialize conversation
     messages = [
@@ -172,12 +191,14 @@ def run_agent_stream(
         iteration += 1
         
         try:
+            # Force tool use for first 3 iterations to ensure real searches happen
+            current_tool_choice = "required" if search_round < 3 else "auto"
             # Call model (non-streaming for tool-use phase)
-            response = client.chat.completions.create(
+            response = local_client.chat.completions.create(
                 model=MODEL,
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
-                tool_choice="auto",
+                tool_choice=current_tool_choice,
                 max_tokens=MAX_TOKENS,
                 temperature=0.2,
             )
@@ -361,7 +382,7 @@ def run_agent_stream(
     })
     
     try:
-        response = client.chat.completions.create(
+        response = local_client.chat.completions.create(
             model=MODEL,
             messages=messages,
             max_tokens=MAX_TOKENS,
@@ -405,6 +426,7 @@ def run_agent_sync(
 def follow_up_stream(
     messages: list[dict],
     question: str,
+    api_key: str = "",
 ) -> Generator[str, None, None]:
     """
     Follow-up question stream: given existing conversation messages,
@@ -421,6 +443,15 @@ def follow_up_stream(
         yield "❌ 没有对话上下文，请先生成合规报告"
         return
     
+    # Use provided API key or fallback to module-level client
+    if api_key:
+        local_client = OpenAI(
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            api_key=api_key,
+        )
+    else:
+        local_client = client
+    
     # Add the follow-up question to the conversation
     follow_up_messages = list(messages) + [
         {
@@ -435,7 +466,7 @@ def follow_up_stream(
     
     try:
         # Use streaming for follow-up responses
-        stream = client.chat.completions.create(
+        stream = local_client.chat.completions.create(
             model=MODEL,
             messages=follow_up_messages,
             max_tokens=MAX_TOKENS,

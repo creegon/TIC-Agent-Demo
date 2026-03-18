@@ -27,7 +27,7 @@ function RegulationCard({ reg }: { reg: Regulation }) {
     <AccordionItem
       value={reg.standard_no}
       className="border-b last:border-0"
-      style={{ borderColor: "oklch(0.18 0 0)" }}
+      style={{ borderColor: "#e5e5e5" }}
     >
       <AccordionTrigger className="py-3 px-1 hover:no-underline group">
         <div className="flex items-start gap-3 text-left w-full pr-2">
@@ -35,8 +35,8 @@ function RegulationCard({ reg }: { reg: Regulation }) {
           <span
             className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded shrink-0 mt-0.5"
             style={{
-              backgroundColor: "rgba(212, 131, 10, 0.12)",
-              color: "#d4830a",
+              backgroundColor: "rgba(16, 163, 127, 0.1)",
+              color: "#10a37f",
             }}
           >
             {reg.standard_no}
@@ -44,7 +44,7 @@ function RegulationCard({ reg }: { reg: Regulation }) {
 
           <div className="flex-1 min-w-0">
             {/* Name */}
-            <p className="text-sm font-medium text-zinc-200 leading-snug">
+            <p className="text-sm font-medium text-zinc-700 leading-snug">
               {reg.name}
             </p>
 
@@ -55,9 +55,9 @@ function RegulationCard({ reg }: { reg: Regulation }) {
                   key={m}
                   className="text-[10px] px-1.5 py-0.5 rounded font-medium"
                   style={{
-                    backgroundColor: "oklch(0.16 0 0)",
-                    color: "oklch(0.55 0 0)",
-                    border: "1px solid oklch(0.22 0 0)",
+                    backgroundColor: "#f7f7f8",
+                    color: "#6e6e80",
+                    border: "1px solid #e5e5e5",
                   }}
                 >
                   {m}
@@ -67,8 +67,8 @@ function RegulationCard({ reg }: { reg: Regulation }) {
                 className="text-[10px] px-1.5 py-0.5 rounded font-medium"
                 style={
                   reg.mandatory
-                    ? { backgroundColor: "rgba(239, 68, 68, 0.12)", color: "#f87171" }
-                    : { backgroundColor: "rgba(34, 197, 94, 0.1)", color: "#4ade80" }
+                    ? { backgroundColor: "rgba(239, 68, 68, 0.08)", color: "#ef4444" }
+                    : { backgroundColor: "rgba(22, 163, 74, 0.08)", color: "#16a34a" }
                 }
               >
                 {reg.mandatory ? "强制" : "自愿"}
@@ -82,8 +82,8 @@ function RegulationCard({ reg }: { reg: Regulation }) {
         <div
           className="rounded-lg p-3 space-y-3"
           style={{
-            backgroundColor: "oklch(0.11 0 0)",
-            border: "1px solid oklch(0.18 0 0)",
+            backgroundColor: "#f7f7f8",
+            border: "1px solid #e5e5e5",
           }}
         >
           {/* Description */}
@@ -92,7 +92,7 @@ function RegulationCard({ reg }: { reg: Regulation }) {
               <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
                 描述
               </p>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <p className="text-xs text-zinc-600 leading-relaxed">
                 {reg.description}
               </p>
             </div>
@@ -106,10 +106,10 @@ function RegulationCard({ reg }: { reg: Regulation }) {
               </p>
               <ul className="space-y-1">
                 {reg.key_tests.map((test, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-zinc-400">
+                  <li key={i} className="flex items-start gap-2 text-xs text-zinc-600">
                     <span
                       className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                      style={{ backgroundColor: "#d4830a" }}
+                      style={{ backgroundColor: "#10a37f" }}
                     />
                     {test}
                   </li>
@@ -158,24 +158,24 @@ export function KnowledgeDrawer({
         side="right"
         className="w-[420px] sm:w-[480px] flex flex-col p-0 border-l"
         style={{
-          backgroundColor: "oklch(0.09 0 0)",
-          borderColor: "oklch(0.18 0 0)",
+          backgroundColor: "#ffffff",
+          borderColor: "#e5e5e5",
         }}
       >
         {/* Header */}
         <SheetHeader
           className="px-5 py-4 border-b flex-shrink-0"
-          style={{ borderColor: "oklch(0.16 0 0)" }}
+          style={{ borderColor: "#e5e5e5" }}
         >
           <div className="flex items-center gap-3">
             {/* Book icon */}
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "rgba(212, 131, 10, 0.12)" }}
+              style={{ backgroundColor: "rgba(16, 163, 127, 0.1)" }}
             >
               <svg
                 className="w-4 h-4"
-                style={{ color: "#d4830a" }}
+                style={{ color: "#10a37f" }}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -188,7 +188,7 @@ export function KnowledgeDrawer({
               </svg>
             </div>
             <div>
-              <SheetTitle className="text-sm font-semibold text-zinc-100">
+              <SheetTitle className="text-sm font-semibold text-zinc-800">
                 知识库
               </SheetTitle>
               <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -205,7 +205,7 @@ export function KnowledgeDrawer({
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <svg
                 className="w-6 h-6 animate-spin"
-                style={{ color: "#d4830a" }}
+                style={{ color: "#10a37f" }}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -227,11 +227,11 @@ export function KnowledgeDrawer({
             <div
               className="rounded-lg p-4 text-center"
               style={{
-                backgroundColor: "rgba(239, 68, 68, 0.08)",
+                backgroundColor: "rgba(239, 68, 68, 0.06)",
                 border: "1px solid rgba(239, 68, 68, 0.2)",
               }}
             >
-              <p className="text-xs text-red-400">⚠️ {error}</p>
+              <p className="text-xs text-red-500">⚠️ {error}</p>
             </div>
           )}
 
@@ -244,9 +244,9 @@ export function KnowledgeDrawer({
                 <span
                   className="text-xs font-medium px-2.5 py-1 rounded-full"
                   style={{
-                    backgroundColor: "rgba(212, 131, 10, 0.12)",
-                    color: "#d4830a",
-                    border: "1px solid rgba(212, 131, 10, 0.25)",
+                    backgroundColor: "rgba(16, 163, 127, 0.1)",
+                    color: "#10a37f",
+                    border: "1px solid rgba(16, 163, 127, 0.2)",
                   }}
                 >
                   {data.category}
@@ -256,7 +256,7 @@ export function KnowledgeDrawer({
               {/* Divider */}
               <div
                 className="border-t"
-                style={{ borderColor: "oklch(0.16 0 0)" }}
+                style={{ borderColor: "#e5e5e5" }}
               />
 
               {/* Regulation count */}
@@ -266,7 +266,7 @@ export function KnowledgeDrawer({
 
               {/* Regulations accordion */}
               {data.regulations.length > 0 ? (
-                <Accordion multiple className="w-full">
+                <Accordion className="w-full">
                   {data.regulations.map((reg) => (
                     <RegulationCard key={reg.standard_no} reg={reg} />
                   ))}

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchStatus, SearchStep } from "@/components/search-status";
 import { VizData } from "@/app/page";
 import { ChartTabs } from "@/components/charts/chart-tabs";
+import { type ChartsData } from "@/lib/api";
 import { ReportToolbar } from "@/components/report-toolbar";
 import { KnowledgeDrawer } from "@/components/knowledge-drawer";
 
@@ -18,6 +19,8 @@ interface ReportPanelProps {
   product?: string;
   markets?: string[];
   vizData?: VizData;
+  chartsData?: ChartsData | null;
+  researchLog?: { vizData: VizData; steps: SearchStep[] } | null;
   errorMessage?: string | null;
   /** Called when user submits a followup; receives the question and a fn to stream-append text */
   onFollowup?: (question: string, appendToReport: (section: string) => void) => void;
@@ -31,13 +34,13 @@ function EmptyState() {
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border"
         style={{
-          backgroundColor: "oklch(0.11 0 0)",
-          borderColor: "oklch(0.2 0 0)",
+          backgroundColor: "#f7f7f8",
+          borderColor: "#e5e5e5",
         }}
       >
         <svg
           className="w-9 h-9"
-          style={{ color: "rgba(212,131,10,0.6)" }}
+          style={{ color: "rgba(16,163,127,0.6)" }}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -47,10 +50,10 @@ function EmptyState() {
         </svg>
       </div>
 
-      <h3 className="text-base font-semibold text-zinc-300 mb-2">
+      <h3 className="text-base font-semibold text-zinc-800 mb-2">
         选择产品和市场，开始合规检查
       </h3>
-      <p className="text-sm max-w-sm leading-relaxed mb-8" style={{ color: "oklch(0.48 0 0)" }}>
+      <p className="text-sm max-w-sm leading-relaxed mb-8" style={{ color: "#6e6e80" }}>
         描述您的产品，选择目标销售市场，AI 将自动检索适用法规标准并生成结构化合规报告
       </p>
 
@@ -64,11 +67,11 @@ function EmptyState() {
           <div key={step} className="flex items-start gap-3">
             <div
               className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5"
-              style={{ backgroundColor: "rgba(212,131,10,0.15)", color: "#d4830a" }}
+              style={{ backgroundColor: "rgba(16,163,127,0.12)", color: "#10a37f" }}
             >
               {step}
             </div>
-            <span className="text-xs leading-relaxed" style={{ color: "oklch(0.55 0 0)" }}>
+            <span className="text-xs leading-relaxed" style={{ color: "#6e6e80" }}>
               {text}
             </span>
           </div>
@@ -78,13 +81,13 @@ function EmptyState() {
       {/* Cert badges */}
       <div
         className="flex flex-wrap justify-center gap-2 text-xs"
-        style={{ color: "oklch(0.4 0 0)" }}
+        style={{ color: "#6e6e80" }}
       >
         {["CE 认证", "FCC 认证", "CCC 认证", "REACH", "RoHS", "PSE"].map((cert) => (
           <span
             key={cert}
             className="px-2.5 py-1 rounded-full border text-[11px]"
-            style={{ borderColor: "oklch(0.2 0 0)", backgroundColor: "oklch(0.11 0 0)" }}
+            style={{ borderColor: "#e5e5e5", backgroundColor: "#f7f7f8" }}
           >
             {cert}
           </span>
@@ -105,16 +108,16 @@ function ErrorState({ message }: { message: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
       </div>
-      <h3 className="text-sm font-semibold text-red-400 mb-2">
+      <h3 className="text-sm font-semibold text-red-500 mb-2">
         后端连接失败
       </h3>
-      <p className="text-xs max-w-xs leading-relaxed mb-4" style={{ color: "oklch(0.5 0 0)" }}>
+      <p className="text-xs max-w-xs leading-relaxed mb-4" style={{ color: "#6e6e80" }}>
         {message.includes("fetch") || message.includes("network") || message.includes("Failed")
           ? "无法连接到后端服务，请确认后端已启动（uvicorn backend.main:app --port 8000）"
           : message}
       </p>
-      <p className="text-[11px]" style={{ color: "oklch(0.4 0 0)" }}>
-        本地开发：后端运行在 <code className="px-1 py-0.5 rounded" style={{ backgroundColor: "oklch(0.15 0 0)", color: "#d4830a" }}>localhost:8000</code>
+      <p className="text-[11px]" style={{ color: "#6e6e80" }}>
+        本地开发：后端运行在 <code className="px-1 py-0.5 rounded" style={{ backgroundColor: "#f7f7f8", color: "#10a37f" }}>localhost:8000</code>
       </p>
     </div>
   );
@@ -126,55 +129,55 @@ function ErrorState({ message }: { message: string }) {
 
 function ReportMarkdown({ content }: { content: string }) {
   return (
-    <div className="prose prose-invert max-w-none text-sm leading-relaxed report-markdown">
+    <div className="prose max-w-none text-sm leading-relaxed report-markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           // Headings
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-zinc-100 mb-4 mt-6 first:mt-0">
+            <h1 className="text-xl font-bold text-zinc-800 mb-4 mt-6 first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
             <h2
               className="text-base font-semibold mb-3 mt-6 pb-2 border-b"
-              style={{ color: "#d4830a", borderColor: "oklch(0.18 0 0)" }}
+              style={{ color: "#10a37f", borderColor: "#e5e5e5" }}
             >
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-semibold text-zinc-300 mb-2 mt-4">
+            <h3 className="text-sm font-semibold text-zinc-700 mb-2 mt-4">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="text-sm font-medium text-zinc-400 mb-2 mt-3">
+            <h4 className="text-sm font-medium text-zinc-600 mb-2 mt-3">
               {children}
             </h4>
           ),
 
           // Paragraph
           p: ({ children }) => (
-            <p className="text-zinc-400 mb-3 leading-relaxed">
+            <p className="text-zinc-600 mb-3 leading-relaxed">
               {children}
             </p>
           ),
 
           // Lists
           ul: ({ children }) => (
-            <ul className="list-disc list-outside ml-5 mb-3 space-y-1 text-zinc-400">
+            <ul className="list-disc list-outside ml-5 mb-3 space-y-1 text-zinc-600">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal list-outside ml-5 mb-3 space-y-1 text-zinc-400">
+            <ol className="list-decimal list-outside ml-5 mb-3 space-y-1 text-zinc-600">
               {children}
             </ol>
           ),
           li: ({ children }) => (
-            <li className="text-zinc-400 leading-relaxed">
+            <li className="text-zinc-600 leading-relaxed">
               {children}
             </li>
           ),
@@ -184,9 +187,9 @@ function ReportMarkdown({ content }: { content: string }) {
             <blockquote
               className="border-l-2 pl-4 py-1 my-3 text-xs italic"
               style={{
-                borderColor: "#d4830a",
-                color: "oklch(0.6 0 0)",
-                backgroundColor: "rgba(212, 131, 10, 0.04)",
+                borderColor: "#10a37f",
+                color: "#6e6e80",
+                backgroundColor: "rgba(16, 163, 127, 0.04)",
               }}
             >
               {children}
@@ -197,7 +200,7 @@ function ReportMarkdown({ content }: { content: string }) {
           hr: () => (
             <hr
               className="my-5 border-0 border-t"
-              style={{ borderColor: "oklch(0.2 0 0)" }}
+              style={{ borderColor: "#e5e5e5" }}
             />
           ),
 
@@ -209,9 +212,9 @@ function ReportMarkdown({ content }: { content: string }) {
                 <code
                   className={`block rounded-md px-4 py-3 my-3 text-xs font-mono overflow-x-auto ${className ?? ""}`}
                   style={{
-                    backgroundColor: "oklch(0.13 0 0)",
-                    color: "#e5c07b",
-                    border: "1px solid oklch(0.2 0 0)",
+                    backgroundColor: "#f7f7f8",
+                    color: "#0d0d0d",
+                    border: "1px solid #e5e5e5",
                   }}
                   {...rest}
                 >
@@ -223,8 +226,8 @@ function ReportMarkdown({ content }: { content: string }) {
               <code
                 className="rounded px-1.5 py-0.5 text-[11px] font-mono"
                 style={{
-                  backgroundColor: "oklch(0.15 0 0)",
-                  color: "#e5c07b",
+                  backgroundColor: "#f7f7f8",
+                  color: "#0d0d0d",
                 }}
                 {...rest}
               >
@@ -238,27 +241,27 @@ function ReportMarkdown({ content }: { content: string }) {
             <pre
               className="rounded-md my-3 overflow-x-auto"
               style={{
-                backgroundColor: "oklch(0.13 0 0)",
-                border: "1px solid oklch(0.2 0 0)",
+                backgroundColor: "#f7f7f8",
+                border: "1px solid #e5e5e5",
               }}
             >
               {children}
             </pre>
           ),
 
-          // Links — amber color
+          // Links — green color
           a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2 transition-colors"
-              style={{ color: "#d4830a" }}
+              style={{ color: "#10a37f" }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#f59e0b";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#0d8f6f";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#d4830a";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#10a37f";
               }}
             >
               {children}
@@ -267,24 +270,24 @@ function ReportMarkdown({ content }: { content: string }) {
 
           // Bold / strong
           strong: ({ children }) => (
-            <strong className="font-semibold text-zinc-200">{children}</strong>
+            <strong className="font-semibold text-zinc-800">{children}</strong>
           ),
 
           // Italic / em
           em: ({ children }) => (
-            <em className="italic text-zinc-300">{children}</em>
+            <em className="italic text-zinc-600">{children}</em>
           ),
 
           // ── Tables (remark-gfm) ──────────────────────────────────
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4 rounded-lg border" style={{ borderColor: "oklch(0.22 0 0)" }}>
+            <div className="overflow-x-auto my-4 rounded-lg border" style={{ borderColor: "#e5e5e5" }}>
               <table className="w-full text-xs border-collapse">
                 {children}
               </table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead style={{ backgroundColor: "oklch(0.15 0 0)" }}>
+            <thead style={{ backgroundColor: "#f7f7f8" }}>
               {children}
             </thead>
           ),
@@ -294,9 +297,9 @@ function ReportMarkdown({ content }: { content: string }) {
           tr: ({ children }) => (
             <tr
               className="border-t transition-colors"
-              style={{ borderColor: "oklch(0.18 0 0)" }}
+              style={{ borderColor: "#e5e5e5" }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "oklch(0.13 0 0)";
+                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "#f9f9fb";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "";
@@ -308,13 +311,13 @@ function ReportMarkdown({ content }: { content: string }) {
           th: ({ children }) => (
             <th
               className="px-3 py-2 text-left font-semibold"
-              style={{ color: "#d4830a" }}
+              style={{ color: "#10a37f" }}
             >
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 text-zinc-400">
+            <td className="px-3 py-2 text-zinc-600">
               {children}
             </td>
           ),
@@ -338,12 +341,14 @@ export function ReportPanel({
   product,
   markets,
   vizData,
+  chartsData,
+  researchLog,
   errorMessage,
 }: ReportPanelProps) {
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: "#ffffff" }}>
       {/* Toolbar — only shown when report exists */}
       {report && !isLoading && product && (
         <ReportToolbar
@@ -358,9 +363,9 @@ export function ReportPanel({
       {isLoading && (product || markets) && (
         <div
           className="px-6 py-3 border-b flex items-center gap-3 flex-shrink-0"
-          style={{ borderColor: "oklch(0.16 0 0)" }}
+          style={{ borderColor: "#e5e5e5" }}
         >
-          <span className="text-sm font-medium text-zinc-300">{product}</span>
+          <span className="text-sm font-medium text-zinc-700">{product}</span>
           {markets && markets.length > 0 && (
             <div className="flex gap-1.5">
               {markets.map((m) => (
@@ -368,8 +373,8 @@ export function ReportPanel({
                   key={m}
                   className="text-[11px] px-2 py-0.5 rounded font-medium"
                   style={{
-                    backgroundColor: "rgba(212, 131, 10, 0.12)",
-                    color: "#d4830a",
+                    backgroundColor: "rgba(16, 163, 127, 0.1)",
+                    color: "#10a37f",
                   }}
                 >
                   {m}
@@ -408,51 +413,60 @@ export function ReportPanel({
             <TabsList
               className="mb-5 h-8"
               style={{
-                backgroundColor: "oklch(0.13 0 0)",
-                border: "1px solid oklch(0.2 0 0)",
+                backgroundColor: "#f7f7f8",
+                border: "1px solid #e5e5e5",
               }}
             >
               <TabsTrigger
                 value="report"
-                className="text-xs h-6 px-3 data-[state=active]:text-zinc-100"
-                style={{ color: "oklch(0.55 0 0)" }}
+                className="text-xs h-6 px-3 data-[state=active]:text-zinc-800"
+                style={{ color: "#6e6e80" }}
               >
                 📋 合规报告
               </TabsTrigger>
               <TabsTrigger
                 value="charts"
-                className="text-xs h-6 px-3 data-[state=active]:text-zinc-100"
-                style={{ color: "oklch(0.55 0 0)" }}
+                className="text-xs h-6 px-3 data-[state=active]:text-zinc-800"
+                style={{ color: "#6e6e80" }}
               >
                 📊 图表视图
               </TabsTrigger>
               <TabsTrigger
                 value="checklist"
-                className="text-xs h-6 px-3 data-[state=active]:text-zinc-100"
-                style={{ color: "oklch(0.55 0 0)" }}
+                className="text-xs h-6 px-3 data-[state=active]:text-zinc-800"
+                style={{ color: "#6e6e80" }}
               >
                 ✅ 核查清单
               </TabsTrigger>
             </TabsList>
 
+            {/* 合规报告 tab: ONLY markdown report text */}
             <TabsContent value="report">
               <ReportMarkdown content={report} />
-              <ChartTabs reportText={report} markets={markets ?? []} />
             </TabsContent>
 
+            {/* 图表视图 tab: charts + research log + notes */}
             <TabsContent value="charts">
-              <ChartTabs reportText={report} markets={markets ?? []} />
+              {/* Research log (collapsible) */}
+              {researchLog && (
+                <SearchStatus
+                  steps={researchLog.steps}
+                  vizData={researchLog.vizData}
+                  isLog={true}
+                />
+              )}
+              <ChartTabs reportText={report} markets={markets ?? []} chartsData={chartsData} />
             </TabsContent>
 
             <TabsContent value="checklist">
               <div
                 className="rounded-lg border p-8 text-center"
                 style={{
-                  backgroundColor: "oklch(0.11 0 0)",
-                  borderColor: "oklch(0.2 0 0)",
+                  backgroundColor: "#f7f7f8",
+                  borderColor: "#e5e5e5",
                 }}
               >
-                <p className="text-sm" style={{ color: "oklch(0.5 0 0)" }}>
+                <p className="text-sm" style={{ color: "#6e6e80" }}>
                   ✅ 交互式核查清单（即将推出）
                 </p>
               </div>
