@@ -9,17 +9,16 @@ from tools import TOOL_DEFINITIONS, execute_tool
 from prompts import SYSTEM_PROMPT, REPORT_TEMPLATE
 from knowledge_base import cross_validate, build_cross_validation_html
 
-# Default: use OpenRouter (supports function calling)
-# When user provides their own Google AI key via frontend, a per-request client is created
+# Default: use local Vertex AI proxy (free $300 credit, gemini-3-flash with function calling)
 import os
-_DEFAULT_BASE_URL = os.environ.get("DEFAULT_LLM_BASE_URL", "https://openrouter.ai/api/v1")
-_DEFAULT_API_KEY = os.environ.get("DEFAULT_LLM_API_KEY", "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")
+_DEFAULT_BASE_URL = os.environ.get("DEFAULT_LLM_BASE_URL", "http://127.0.0.1:8046/v1")
+_DEFAULT_API_KEY = os.environ.get("DEFAULT_LLM_API_KEY", "any")
 client = OpenAI(
     base_url=_DEFAULT_BASE_URL,
     api_key=_DEFAULT_API_KEY,
 )
 
-MODEL = os.environ.get("DEFAULT_LLM_MODEL", "google/gemini-2.0-flash-001")
+MODEL = os.environ.get("DEFAULT_LLM_MODEL", "gemini-3-flash")
 MAX_ITERATIONS = 15  # Safety limit for tool call loop (iter-4: increased for deeper search)
 MAX_TOKENS = 8192
 
@@ -304,6 +303,7 @@ def run_agent_stream(
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
+                    "name": tool_name,
                     "content": tool_result,
                 })
             
