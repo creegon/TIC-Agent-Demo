@@ -549,7 +549,7 @@ def _sync_gen_to_async(sync_gen):
     Wrap a synchronous generator to be iterable in an async context
     without blocking the event loop (runs in thread executor).
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     gen_iter = iter(sync_gen)
 
     async def _next():
@@ -712,7 +712,7 @@ async def export_pdf(req: ExportPDFRequest):
 
     try:
         # generate_pdf is CPU-bound; run in thread executor to avoid blocking
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         pdf_path = await loop.run_in_executor(
             None,
             lambda: generate_pdf(req.report_text, req.product, req.markets),

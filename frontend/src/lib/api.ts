@@ -97,11 +97,19 @@ async function consumeSSE(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  // Per SSE spec: event type and data accumulate until an empty line dispatches the event
   let currentEventType = "message";
+  let dataLines: string[] = [];
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      // Flush any remaining buffered event on stream close
+      if (dataLines.length > 0) {
+        onEvent(currentEventType, dataLines.join("\n"));
+      }
+      break;
+    }
 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
@@ -109,16 +117,22 @@ async function consumeSSE(
 
     for (const line of lines) {
       if (line.startsWith("event: ")) {
+        // Set event type; stays valid until the event is dispatched (empty line)
         currentEventType = line.slice(7).trim();
       } else if (line.startsWith("data: ")) {
-        const data = line.slice(6);
-        onEvent(currentEventType, data);
-        // Reset event type after consuming (SSE spec: each data block can have its own event)
+        // Accumulate data lines; multiple data: lines belong to the same event
+        dataLines.push(line.slice(6));
+      } else if (line === "" || line === "\r") {
+        // Empty line = end of SSE event block; dispatch if we have data
+        if (dataLines.length > 0) {
+          onEvent(currentEventType, dataLines.join("\n"));
+        }
+        // Reset for next event
         currentEventType = "message";
-      } else if (line === "") {
-        // Empty line = end of SSE block; reset event type
-        currentEventType = "message";
+        dataLines = [];
       }
+      // Lines starting with ":" are SSE comments — ignore
+      // All other lines are ignored per spec
     }
   }
 }
