@@ -17,13 +17,9 @@ interface Props {
   timelineData?: TimelineItem[] | null;
 }
 
-interface TimelineItemExtended extends TimelineItem {
-  source?: string;
-}
-
 interface TooltipProps {
   active?: boolean;
-  payload?: Array<{ payload: TimelineItemExtended & { startDisplay: number } }>;
+  payload?: Array<{ payload: TimelineItem & { startDisplay: number; durationDisplay: number } }>;
 }
 
 function CustomTooltip({ active, payload }: TooltipProps) {
@@ -95,7 +91,9 @@ export function TimelineChart({ markets, timelineData }: Props) {
     durationDisplay: d.duration,
   }));
 
+  const totalCount = data.length;
   const displayData = data.slice(0, 16);
+  const isTruncated = totalCount > 16;
   const maxWeeks = Math.max(...displayData.map((d) => d.start + d.duration), 16);
 
   return (
@@ -150,6 +148,11 @@ export function TimelineChart({ markets, timelineData }: Props) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {isTruncated && (
+        <p className="text-center text-[11px] text-amber-500 mt-2">
+          仅展示前 16 项，共 {totalCount} 项
+        </p>
+      )}
       <p className="text-center text-[10px] text-zinc-400 mt-1">
         认证周期提取自报告原文，为一般参考值，实际周期受认证机构排期、样品准备等因素影响。悬停查看来源。
       </p>

@@ -31,7 +31,6 @@ interface CostEntry extends CostData {
 }
 
 interface Props {
-  markets: string[];
   costData?: CostEntry[] | null;
 }
 

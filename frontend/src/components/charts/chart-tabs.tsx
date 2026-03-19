@@ -73,7 +73,6 @@ export function ChartTabs({ reportText, markets, chartsData }: Props) {
 
           <TabsContent value="cost">
             <CostComparison
-              markets={markets}
               costData={chartsData?.costs ?? undefined}
             />
           </TabsContent>

@@ -69,3 +69,7 @@ frontend/.vercel/
 exports/
 *.pdf
 tmp/
+
+# ── Tests ─────────────────────────────────────────────────────────────────
+# tests/ directory is intentionally tracked (test scripts committed)
+# !tests/
