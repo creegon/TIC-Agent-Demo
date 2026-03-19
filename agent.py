@@ -180,6 +180,7 @@ def run_agent_stream(
     iteration = 0
     tool_call_count = 0
     search_round = 0  # Track search rounds for color coding
+    reminder_injected = False  # Guard: inject reminder only once
 
     # Aggregated funnel counters across all searches
     total_raw = 0
@@ -307,6 +308,17 @@ def run_agent_stream(
                     "content": tool_result,
                 })
             
+            # Inject reminder before final report generation (once, after all tool results processed)
+            if not reminder_injected:
+                reminder = """⚠️ 生成报告前的强制检查清单：
+1. 如果产品是无线/蓝牙/贴近人体设备 → 每个市场的表格必须包含SAR/RF Exposure行（FCC: 47 CFR §1.1310, 1.6 W/kg; EU: EN 62479）
+2. 报告末尾必须有"## 参考来源"段落，列出搜索中实际访问过的URL
+3. RED网络安全执行日期是2026年8月1日（不是2024年、不是2025年）
+4. 不要编造标准号——不确定就写"请核实"
+请严格遵守以上要求生成报告。"""
+                messages.append({"role": "user", "content": reminder})
+                reminder_injected = True
+
             # Continue loop to process tool results
             continue
         
